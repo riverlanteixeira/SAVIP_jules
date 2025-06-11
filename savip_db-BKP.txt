@@ -1,0 +1,293 @@
+-- SQL Schema for SAVIP - Sistema de Análise de Vínculos para Investigação Policial
+-- Database: savip_db
+-- Author: Gemini AI
+-- Version: 1.0
+-- Date: 2024-06-11
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+--
+-- Estrutura da tabela `casos`
+-- Armazena as informações gerais de um caso de investigação.
+--
+CREATE TABLE `casos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `referencia_bo` varchar(255) DEFAULT NULL COMMENT 'Números dos Boletins de Ocorrência relacionados',
+  `inquerito_policial` varchar(100) DEFAULT NULL,
+  `autos` varchar(100) DEFAULT NULL,
+  `relato_fatos` text COMMENT 'Relato geral dos fatos ocorridos',
+  `diligencias` text COMMENT 'Diligências e passos da investigação',
+  `conclusao` text COMMENT 'Conclusão das investigações',
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `pessoas`
+-- Cadastro central de todas as pessoas envolvidas nas investigações.
+--
+CREATE TABLE `pessoas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome_completo` varchar(255) NOT NULL,
+  `alcunha` varchar(100) DEFAULT NULL,
+  `sexo` enum('Masculino','Feminino') DEFAULT NULL,
+  `rg` varchar(20) DEFAULT NULL,
+  `cpf` varchar(14) DEFAULT NULL UNIQUE,
+  `nome_pai` varchar(255) DEFAULT NULL,
+  `nome_mae` varchar(255) DEFAULT NULL,
+  `naturalidade` varchar(100) DEFAULT NULL,
+  `nacionalidade` varchar(100) DEFAULT NULL,
+  `data_nascimento` date DEFAULT NULL,
+  `cor_cabelo` varchar(50) DEFAULT NULL,
+  `cor_olhos` varchar(50) DEFAULT NULL,
+  `cor_pele` enum('Branco','Negro','Indígena','Oriental','Outro') DEFAULT NULL,
+  `faixa_etaria` enum('Criança','Adolescente','Adulto','Idoso') DEFAULT NULL,
+  `historico_criminal` text,
+  `atuacao_geografica` text,
+  `data_cadastro` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `tatuagens`
+-- Tabela para registrar as múltiplas tatuagens de uma pessoa.
+--
+CREATE TABLE `tatuagens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pessoa_id` int(11) NOT NULL,
+  `local_corpo` enum('Rosto','Pescoço','Ombro Direito','Braço Direito','Antebraço Direito','Mão Direita','Ombro Esquerdo','Braço Esquerdo','Antebraço Esquerdo','Mão Esquerda','Peitoral','Abdome','Costas','Coxa Direita','Perna Direita','Pé Direito','Coxa Esquerda','Perna Esquerda','Pé Esquerdo') NOT NULL,
+  `descricao` text NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `redes_sociais`
+-- Tabela para registrar múltiplos perfis de redes sociais de uma pessoa.
+--
+CREATE TABLE `redes_sociais` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pessoa_id` int(11) NOT NULL,
+  `plataforma` varchar(100) NOT NULL COMMENT 'Ex: Instagram, Facebook, TikTok',
+  `url_perfil` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `organizacoes_criminosas`
+-- Lista pré-definida de organizações criminosas.
+--
+CREATE TABLE `organizacoes_criminosas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(255) NOT NULL UNIQUE,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Tabela de junção para afiliação de pessoas a organizações.
+--
+CREATE TABLE `pessoa_organizacao` (
+  `pessoa_id` int(11) NOT NULL,
+  `organizacao_id` int(11) NOT NULL,
+  PRIMARY KEY (`pessoa_id`, `organizacao_id`),
+  FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`organizacao_id`) REFERENCES `organizacoes_criminosas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `locais`
+-- Cadastro de locais/endereços relevantes.
+--
+CREATE TABLE `locais` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `cep` varchar(9) DEFAULT NULL,
+  `rua` varchar(255) NOT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `bairro` varchar(100) DEFAULT NULL,
+  `municipio` varchar(100) NOT NULL,
+  `uf` varchar(2) NOT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `ocorrencias`
+-- Cadastro de boletins de ocorrência.
+--
+CREATE TABLE `ocorrencias` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `numero_bo` varchar(50) NOT NULL UNIQUE,
+  `data_fato` datetime NOT NULL,
+  `local_id` int(11) DEFAULT NULL,
+  `fatos_comunicados` text COMMENT 'Natureza da ocorrência, ex: Roubo, Homicídio',
+  `relato_geral` text,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`local_id`) REFERENCES `locais`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `veiculos`
+--
+CREATE TABLE `veiculos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `placa` varchar(10) DEFAULT NULL UNIQUE,
+  `marca_modelo` varchar(100) DEFAULT NULL,
+  `ano_modelo` varchar(10) DEFAULT NULL,
+  `cor` varchar(50) DEFAULT NULL,
+  `combustivel` varchar(50) DEFAULT NULL,
+  `renavam` varchar(20) DEFAULT NULL,
+  `chassi` varchar(30) DEFAULT NULL,
+  `municipio` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `objetos`
+--
+CREATE TABLE `objetos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tipo` varchar(100) NOT NULL COMMENT 'Ex: Arma de Fogo, Celular, Notebook',
+  `quantidade` int(11) NOT NULL DEFAULT 1,
+  `marca` varchar(100) DEFAULT NULL,
+  `modelo` varchar(100) DEFAULT NULL,
+  `numero_serie` varchar(100) DEFAULT NULL,
+  `observacoes` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `telefones`
+--
+CREATE TABLE `telefones` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `numero` varchar(20) NOT NULL,
+  `imei` varchar(30) DEFAULT NULL,
+  `operadora` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Estrutura da tabela `fotos`
+-- Tabela genérica para armazenar fotos de Pessoas e Ocorrências.
+--
+CREATE TABLE `fotos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `entidade_tipo` enum('pessoa','ocorrencia') NOT NULL,
+  `entidade_id` int(11) NOT NULL,
+  `path_arquivo` varchar(255) NOT NULL,
+  `descricao` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- =================================================================== --
+-- TABELAS DE VÍNCULOS (JUNCTION TABLES)
+-- O coração do sistema de análise de relacionamentos.
+-- =================================================================== --
+
+--
+-- Vínculo: Caso <-> Pessoa
+--
+CREATE TABLE `caso_pessoa` (
+  `caso_id` int(11) NOT NULL,
+  `pessoa_id` int(11) NOT NULL,
+  `atuacao` enum('Suspeito','Autor','Vítima','Testemunha','Outro') NOT NULL,
+  PRIMARY KEY (`caso_id`, `pessoa_id`),
+  FOREIGN KEY (`caso_id`) REFERENCES `casos`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Vínculo: Caso <-> Outras Entidades
+--
+CREATE TABLE `caso_veiculo` (`caso_id` int(11) NOT NULL, `veiculo_id` int(11) NOT NULL, PRIMARY KEY (`caso_id`, `veiculo_id`), FOREIGN KEY (`caso_id`) REFERENCES `casos`(`id`) ON DELETE CASCADE, FOREIGN KEY (`veiculo_id`) REFERENCES `veiculos`(`id`) ON DELETE CASCADE) ENGINE=InnoDB;
+CREATE TABLE `caso_objeto` (`caso_id` int(11) NOT NULL, `objeto_id` int(11) NOT NULL, PRIMARY KEY (`caso_id`, `objeto_id`), FOREIGN KEY (`caso_id`) REFERENCES `casos`(`id`) ON DELETE CASCADE, FOREIGN KEY (`objeto_id`) REFERENCES `objetos`(`id`) ON DELETE CASCADE) ENGINE=InnoDB;
+CREATE TABLE `caso_local` (`caso_id` int(11) NOT NULL, `local_id` int(11) NOT NULL, PRIMARY KEY (`caso_id`, `local_id`), FOREIGN KEY (`caso_id`) REFERENCES `casos`(`id`) ON DELETE CASCADE, FOREIGN KEY (`local_id`) REFERENCES `locais`(`id`) ON DELETE CASCADE) ENGINE=InnoDB;
+CREATE TABLE `caso_telefone` (`caso_id` int(11) NOT NULL, `telefone_id` int(11) NOT NULL, PRIMARY KEY (`caso_id`, `telefone_id`), FOREIGN KEY (`caso_id`) REFERENCES `casos`(`id`) ON DELETE CASCADE, FOREIGN KEY (`telefone_id`) REFERENCES `telefones`(`id`) ON DELETE CASCADE) ENGINE=InnoDB;
+
+--
+-- Vínculo: Ocorrência <-> Pessoa
+--
+CREATE TABLE `ocorrencia_pessoa` (
+  `ocorrencia_id` int(11) NOT NULL,
+  `pessoa_id` int(11) NOT NULL,
+  `participacao` enum('Suspeito','Vítima','Testemunha','Outro') NOT NULL,
+  `relato_individual` text,
+  PRIMARY KEY (`ocorrencia_id`, `pessoa_id`),
+  FOREIGN KEY (`ocorrencia_id`) REFERENCES `ocorrencias`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`pessoa_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Vínculo: Ocorrência <-> Outras Entidades
+--
+CREATE TABLE `ocorrencia_veiculo` (`ocorrencia_id` int(11) NOT NULL, `veiculo_id` int(11) NOT NULL, PRIMARY KEY (`ocorrencia_id`, `veiculo_id`), FOREIGN KEY (`ocorrencia_id`) REFERENCES `ocorrencias`(`id`) ON DELETE CASCADE, FOREIGN KEY (`veiculo_id`) REFERENCES `veiculos`(`id`) ON DELETE CASCADE) ENGINE=InnoDB;
+CREATE TABLE `ocorrencia_objeto` (`ocorrencia_id` int(11) NOT NULL, `objeto_id` int(11) NOT NULL, PRIMARY KEY (`ocorrencia_id`, `objeto_id`), FOREIGN KEY (`ocorrencia_id`) REFERENCES `ocorrencias`(`id`) ON DELETE CASCADE, FOREIGN KEY (`objeto_id`) REFERENCES `objetos`(`id`) ON DELETE CASCADE) ENGINE=InnoDB;
+
+--
+-- Estrutura da tabela `gestao_vinculos`
+-- Permite a criação manual de vínculos diretos entre duas pessoas.
+--
+CREATE TABLE `gestao_vinculos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pessoa_origem_id` int(11) NOT NULL,
+  `pessoa_destino_id` int(11) NOT NULL,
+  `tipo_vinculo` enum('Familiar','Criminal','Associativo','Profissional','Outro') NOT NULL,
+  `intensidade` enum('Forte','Médio','Fraco') DEFAULT NULL,
+  `data_inicio` date DEFAULT NULL,
+  `data_fim` date DEFAULT NULL,
+  `fonte_informacao` text,
+  `evidencia_path` varchar(255) DEFAULT NULL COMMENT 'Caminho para o arquivo de evidência',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_vinculo` (`pessoa_origem_id`,`pessoa_destino_id`,`tipo_vinculo`),
+  FOREIGN KEY (`pessoa_origem_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`pessoa_destino_id`) REFERENCES `pessoas`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+--
+-- Populando a tabela `organizacoes_criminosas` com os dados iniciais.
+--
+INSERT INTO `organizacoes_criminosas` (`nome`) VALUES
+('A Família Capixaba'),
+('Amigos dos Amigos'),
+('Bala na Cara'),
+('Bonde de Jesus'),
+('Bonde do Maluco'),
+('Bonde dos 40'),
+('Cangaço'),
+('Carecas do ABC'),
+('Comando da Paz'),
+('Comando Organizado do Maranhão'),
+('Comando Revolucionário Brasileiro da Criminalidade'),
+('Comando Vermelho'),
+('Comando Vermelho Jovem'),
+('Família do Norte'),
+('Guardiões do Estado'),
+('Lei das organizações criminosas'),
+('Liga da Justiça (milícia)'),
+('Máfia do Lixo de Maceió'),
+('Máfia dos Vampiros'),
+('Massa Carcerária'),
+('Milícia (criminalidade no Brasil)'),
+('Neonazismo no Brasil'),
+('Okaida'),
+('Operação Anaconda (investigação policial)'),
+('Os Manos'),
+('Povo de Israel'),
+('Primeiro Comando de Vitória'),
+('Primeiro Comando do Maranhão'),
+('Primeiro Grupo Catarinense'),
+('Sindicato do Crime do Rio Grande do Norte'),
+('Terceiro Comando'),
+('Terceiro Comando da Capital'),
+('Terceiro Comando Jovem'),
+('Terceiro Comando Puro'),
+('V7 - AntiBala');
+
+
+COMMIT;
