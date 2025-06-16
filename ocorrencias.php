@@ -20,15 +20,17 @@
         <div class="container mx-auto px-6 py-3">
             <div class="flex justify-between items-center">
                 <div class="text-xl font-bold">SAVIP</div>
-                <div>
-                    <a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a>
-                    <a href="index.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Pessoas</a>
-                    <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
-                    <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a>
-                    <a href="objetos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a>
-                    <a href="telefones.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a>
-                    <a href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de Vínculos</a>
-                </div>
+                <div><a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a><a
+                        href="index.php" class="px-3 py-2 rounded-md text-sm font-medium bg-gray-900">Pessoas</a>
+                        <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
+                        <a href="locais.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Locais</a>
+                        <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a><a
+                        href="objetos.php"
+                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a><a
+                        href="telefones.php"
+                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a><a
+                        href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de
+                        Vínculos</a></div>
             </div>
         </div>
     </nav>
@@ -48,14 +50,14 @@
                     <div class="md:col-span-2"><label for="fatos_comunicados" class="block text-sm font-medium text-gray-700">Natureza</label><select id="fatos_comunicados" name="fatos_comunicados" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required><option value="" disabled selected>Selecione...</option><option value="ROUBO">ROUBO</option><option value="FURTO">FURTO</option><option value="TRÁFICO DE DROGAS">TRÁFICO DE DROGAS</option><option value="ESTELIONATO">ESTELIONATO</option><option value="RECEPTAÇÃO">RECEPTAÇÃO</option><option value="HOMICÍDIO">HOMICÍDIO</option><option value="EXTORSÃO">EXTORSÃO</option><option value="USO DE DOCUMENTO FALSO">USO DE DOCUMENTO FALSO</option><option value="SEQUESTRO E CÁRCERE PRIVADO">SEQUESTRO E CÁRCERE PRIVADO</option><option value="ASSOCIAÇÃO PARA O TRÁFICO DE DROGAS">ASSOCIAÇÃO PARA O TRÁFICO DE DROGAS</option><option value="MOEDA FALSA">MOEDA FALSA</option><option value="POSSE IRREGULAR DE ARMA DE FOGO">POSSE IRREGULAR DE ARMA DE FOGO</option><option value="FRAUDE NO COMÉRCIO">FRAUDE NO COMÉRCIO</option></select></div>
                 </div>
                 <h3 class="text-lg font-semibold mb-4">Local do Fato</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 border-b pb-6 mb-6">
-                    <div><label for="cep" class="block text-sm font-medium text-gray-700">CEP</label><input type="text" id="cep" name="cep" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
-                    <div class="md:col-span-3"><label for="rua" class="block text-sm font-medium text-gray-700">Rua</label><input type="text" id="rua" name="rua" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required></div>
-                    <div><label for="numero" class="block text-sm font-medium text-gray-700">Número</label><input type="text" id="numero" name="numero" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
-                    <div><label for="bairro" class="block text-sm font-medium text-gray-700">Bairro</label><input type="text" id="bairro" name="bairro" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required></div>
-                    <div><label for="municipio" class="block text-sm font-medium text-gray-700">Município</label><input type="text" id="municipio" name="municipio" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required></div>
-                    <div><label for="uf" class="block text-sm font-medium text-gray-700">UF</label><select id="uf" name="uf" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required><option value="" disabled selected>Selecione</option><option value="AC">Acre</option><option value="AL">Alagoas</option><option value="AP">Amapá</option><option value="AM">Amazonas</option><option value="BA">Bahia</option><option value="CE">Ceará</option><option value="DF">Distrito Federal</option><option value="ES">Espírito Santo</option><option value="GO">Goiás</option><option value="MA">Maranhão</option><option value="MT">Mato Grosso</option><option value="MS">Mato Grosso do Sul</option><option value="MG">Minas Gerais</option><option value="PA">Pará</option><option value="PB">Paraíba</option><option value="PR">Paraná</option><option value="PE">Pernambuco</option><option value="PI">Piauí</option><option value="RJ">Rio de Janeiro</option><option value="RN">Rio Grande do Norte</option><option value="RS">Rio Grande do Sul</option><option value="RO">Rondônia</option><option value="RR">Roraima</option><option value="SC">Santa Catarina</option><option value="SP">São Paulo</option><option value="SE">Sergipe</option><option value="TO">Tocantins</option></select></div>
-                </div>
+<div class="border-b pb-6 mb-6">
+    <label for="search-local" class="block text-sm font-medium text-gray-700">Buscar Local (por descrição, rua ou município)</label>
+    <div class="relative">
+        <input type="text" id="search-local" placeholder="Digite para buscar um local já cadastrado..." class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+        <div id="search-results-local" class="search-results absolute z-20 w-full bg-white border mt-1 rounded shadow-lg"></div>
+    </div>
+    <div id="linked-local" class="mt-2"></div>
+</div>
                 <h3 class="text-lg font-semibold mb-4">Pessoas Envolvidas</h3>
                 <div class="relative mb-4">
                     <label for="search-pessoa" class="block text-sm font-medium text-gray-700">Buscar Pessoa (por nome ou CPF)</label>
@@ -114,8 +116,10 @@
     </div>
 
     <script>
+        
         const API_URL = 'api.php';
         let envolvidos = [], envolvidosEdit = [];
+        let linkedLocalId = null;
 
         const formAddOcorrencia = document.getElementById('form-add-ocorrencia');
         const formEditOcorrencia = document.getElementById('form-edit-ocorrencia');
@@ -131,7 +135,7 @@
             const searchInput = document.getElementById(inputId);
             const searchResults = document.getElementById(resultsId);
             searchInput.addEventListener('keyup', async (e) => {
-                const term = e.target.value.trim();
+                const term = searchInput.value.trim(); // Use searchInput.value
                 if (term.length < 2) { searchResults.classList.remove('show'); return; }
                 const response = await fetch(`${API_URL}?action=${searchAction}&term=${term}`);
                 const items = await response.json();
@@ -148,6 +152,10 @@
                 }
             });
         }
+        // Hide search results when input loses focus
+        document.querySelectorAll('.search-results').forEach(resultsEl => {
+             resultsEl.parentElement.querySelector('input').addEventListener('blur', () => { setTimeout(() => resultsEl.classList.remove('show'), 100); }); // Delay to allow click on result
+        });
 
         function addEnvolvido(p) { if (!envolvidos.find(i => i.id === p.id)) { envolvidos.push(p); renderEnvolvidos(); } }
         function removeEnvolvido(index) { envolvidos.splice(index, 1); renderEnvolvidos(); }
@@ -157,7 +165,7 @@
             envolvidos.forEach((p, i) => {
                 const div = document.createElement('div');
                 div.className = 'p-2 border rounded flex justify-between items-center bg-gray-50';
-                div.innerHTML = `<span>${p.nome_completo}</span><div><label class="text-sm mr-2">Participação:</label><select class="p-1 border rounded mr-4" data-pessoa-id="${p.id}"><option>Suspeito</option><option>Vítima</option><option>Testemunha</option><option>Outro</option></select><button type="button" onclick="removeEnvolvido(${i})" class="text-red-500 font-bold">X</button></div>`;
+                div.innerHTML = `<span>${escapeHTML(p.nome_completo)}</span><div><label class="text-sm mr-2">Participação:</label><select class="p-1 border rounded mr-4" data-pessoa-id="${p.id}"><option>Suspeito</option><option>Vítima</option><option>Testemunha</option><option>Outro</option></select><button type="button" onclick="removeEnvolvido(${i})" class="text-red-500 font-bold">X</button></div>`;
                 listEl.appendChild(div);
             });
         }
@@ -170,7 +178,7 @@
             envolvidosEdit.forEach((p, i) => {
                 const div = document.createElement('div');
                 div.className = 'p-2 border rounded flex justify-between items-center bg-gray-50';
-                div.innerHTML = `<span>${p.nome_completo}</span><div><label class="text-sm mr-2">Participação:</label><select class="p-1 border rounded mr-4" data-pessoa-id="${p.id}"><option ${p.participacao === 'Suspeito' ? 'selected' : ''}>Suspeito</option><option ${p.participacao === 'Vítima' ? 'selected' : ''}>Vítima</option><option ${p.participacao === 'Testemunha' ? 'selected' : ''}>Testemunha</option><option ${p.participacao === 'Outro' ? 'selected' : ''}>Outro</option></select><button type="button" onclick="removeEnvolvidoEdit(${i})" class="text-red-500 font-bold">X</button></div>`;
+                div.innerHTML = `<span>${escapeHTML(p.nome_completo)}</span><div><label class="text-sm mr-2">Participação:</label><select class="p-1 border rounded mr-4" data-pessoa-id="${p.id}"><option ${p.participacao === 'Suspeito' ? 'selected' : ''}>Suspeito</option><option ${p.participacao === 'Vítima' ? 'selected' : ''}>Vítima</option><option ${p.participacao === 'Testemunha' ? 'selected' : ''}>Testemunha</option><option ${p.participacao === 'Outro' ? 'selected' : ''}>Outro</option></select><button type="button" onclick="removeEnvolvidoEdit(${i})" class="text-red-500 font-bold">X</button></div>`;
                 listEl.appendChild(div);
             });
         }
@@ -184,7 +192,7 @@
                 ocorrencias.forEach(item => {
                     const tr = document.createElement('tr');
                     tr.className = 'border-b hover:bg-gray-50';
-                    tr.innerHTML = `<td class="py-3 px-4">${item.numero_bo}</td><td class="py-3 px-4">${item.fatos_comunicados}</td><td class="py-3 px-4">${new Date(item.data_fato).toLocaleString('pt-BR')}</td><td class="py-3 px-4">${item.municipio}-${item.uf}</td><td class="py-3 px-4 text-center">${item.total_envolvidos}</td><td class="py-3 px-4 text-center"><button onclick="abrirModalDetalhes(${item.id})" class="bg-blue-500 text-white font-bold py-1 px-2 rounded text-xs">Detalhes</button><button onclick="abrirModalEdicaoOcorrencia(${item.id})" class="bg-yellow-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Editar</button><button onclick="abrirModalExclusaoOcorrencia(${item.id},'${item.numero_bo}')" class="bg-red-600 text-white font-bold py-1 px-2 rounded text-xs ml-2">Excluir</button></td>`;
+                    tr.innerHTML = `<td class="py-3 px-4">${escapeHTML(item.numero_bo)}</td><td class="py-3 px-4">${escapeHTML(item.fatos_comunicados)}</td><td class="py-3 px-4">${new Date(item.data_fato).toLocaleString('pt-BR')}</td><td class="py-3 px-4">${escapeHTML(item.municipio)}-${escapeHTML(item.uf)}</td><td class="py-3 px-4 text-center">${item.total_envolvidos}</td><td class="py-3 px-4 text-center"><button onclick="abrirModalDetalhes(${item.id})" class="bg-blue-500 text-white font-bold py-1 px-2 rounded text-xs">Detalhes</button><button onclick="abrirModalEdicaoOcorrencia(${item.id})" class="bg-yellow-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Editar</button><button onclick="abrirModalExclusaoOcorrencia(${item.id},'${escapeHTML(item.numero_bo)}')" class="bg-red-600 text-white font-bold py-1 px-2 rounded text-xs ml-2">Excluir</button></td>`;
                     listaOcorrencias.appendChild(tr);
                 });
             }
@@ -197,8 +205,14 @@
             const response = await fetch(`${API_URL}?action=getOcorrenciaDetails&id=${id}`);
             const data = await response.json();
             if (data && data.ocorrencia) {
-                let html = `<p><strong>BO:</strong> ${data.ocorrencia.numero_bo}</p><p><strong>Fato:</strong> ${data.ocorrencia.fatos_comunicados}</p><h4 class="font-semibold mt-2">Envolvidos:</h4>`;
-                if (data.envolvidos.length > 0) { html += '<ul class="list-disc pl-5">'; data.envolvidos.forEach(p => { html += `<li>${p.nome_completo} (${p.participacao})</li>`; }); html += '</ul>'; }
+                let html = `<p><strong>BO:</strong> ${escapeHTML(data.ocorrencia.numero_bo)}</p><p><strong>Fato:</strong> ${escapeHTML(data.ocorrencia.fatos_comunicados)}</p><h4 class="font-semibold mt-2">Envolvidos:</h4>`;
+                if (data.envolvidos && data.envolvidos.length > 0) { 
+                    html += '<ul class="list-disc pl-5">'; 
+                    data.envolvidos.forEach(p => { html += `<li>${escapeHTML(p.nome_completo)} (${escapeHTML(p.participacao)})</li>`; }); 
+                    html += '</ul>'; 
+                } else {
+                    html += '<p class="text-sm text-gray-500">Nenhum envolvido.</p>';
+                }
                 content.innerHTML = html;
             }
         }
@@ -207,21 +221,41 @@
             formEditOcorrencia.reset();
             const response = await fetch(`${API_URL}?action=getOcorrenciaDetails&id=${id}`);
             const data = await response.json();
+
             if (data && data.ocorrencia) {
                 const occ = data.ocorrencia;
                 document.getElementById('edit_ocorrencia_id').value = occ.id;
                 document.getElementById('edit_numero_bo').value = occ.numero_bo;
-                document.getElementById('edit_data_fato').value = new Date(occ.data_fato).toISOString().slice(0, 16);
+
+                let dataFatoParaInput = '';
+                if (occ.data_fato) {
+                    const dateObj = new Date(occ.data_fato);
+                    // Verifica se a data é válida
+                    if (!isNaN(dateObj.valueOf())) {
+                        dataFatoParaInput = dateObj.toISOString().slice(0, 16);
+                    } else {
+                        console.warn("Data do fato inválida recebida da API:", occ.data_fato);
+                        // Opcional: alertar o usuário ou definir um valor padrão
+                    }
+                }
+                document.getElementById('edit_data_fato').value = dataFatoParaInput;
+                
                 document.getElementById('edit_fatos_comunicados').value = occ.fatos_comunicados;
-                document.getElementById('edit_cep').value = occ.cep;
-                document.getElementById('edit_rua').value = occ.rua;
-                document.getElementById('edit_numero').value = occ.numero;
-                document.getElementById('edit_bairro').value = occ.bairro;
-                document.getElementById('edit_municipio').value = occ.municipio;
-                document.getElementById('edit_uf').value = occ.uf;
-                envolvidosEdit = data.envolvidos;
+                
+                // Campos do local podem ser nulos se o LEFT JOIN não encontrar correspondência
+                document.getElementById('edit_cep').value = occ.cep || '';
+                document.getElementById('edit_rua').value = occ.rua || '';
+                document.getElementById('edit_numero').value = occ.numero || '';
+                document.getElementById('edit_bairro').value = occ.bairro || '';
+                document.getElementById('edit_municipio').value = occ.municipio || '';
+                document.getElementById('edit_uf').value = occ.uf || '';
+                
+                envolvidosEdit = data.envolvidos || []; // Garante que envolvidosEdit seja um array
                 renderEnvolvidosEdit();
                 toggleModal('edit-ocorrencia-modal', true);
+            } else {
+                console.error("Não foi possível carregar os detalhes da ocorrência para edição. Resposta da API:", data);
+                alert("Erro ao carregar detalhes da ocorrência. Verifique se a ocorrência e seu local associado existem, ou se há uma mensagem de erro da API no console.");
             }
         }
 
@@ -233,39 +267,115 @@
 
         async function excluirOcorrencia() {
             const id = confirmDeleteOcorrenciaBtn.dataset.id;
-            const response = await fetch(`${API_URL}?action=deleteOcorrencia`, { method: 'POST', body: JSON.stringify({ id: id }) });
-            const result = await response.json();
-            if (result.success) { toggleModal('delete-ocorrencia-modal', false); carregarOcorrencias(); } else { alert('Erro: ' + result.message); }
+             try {
+                const response = await fetch(`${API_URL}?action=deleteOcorrencia`, { method: 'POST', body: JSON.stringify({ id: id }), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if (result.success) { toggleModal('delete-ocorrencia-modal', false); carregarOcorrencias(); alert('Ocorrência excluída com sucesso!'); } 
+                else { alert('Erro ao excluir ocorrência: ' + (result.message || 'Erro desconhecido.')); }
+            } catch (error) {
+                console.error("Erro ao excluir ocorrência:", error);
+                alert("Falha na comunicação com o servidor: " + error.message);
+            }
         }
 
         async function salvarAdicaoOcorrencia(e) {
-            e.preventDefault();
-            const participacaoSelects = document.querySelectorAll('#envolvidos-list select');
-            const envolvidosData = envolvidos.map((pessoa, index) => ({ id: pessoa.id, participacao: participacaoSelects[index].value }));
-            const payload = { ...Object.fromEntries(new FormData(e.target).entries()), envolvidos: envolvidosData };
-            const response = await fetch(`${API_URL}?action=addOcorrencia`, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await response.json();
-            if (result.success) { e.target.reset(); envolvidos = []; renderEnvolvidos(); carregarOcorrencias(); } else { alert('Erro: ' + result.message); }
+    e.preventDefault();
+    if (!linkedLocalId) { // Validação para garantir que um local foi selecionado
+        alert('Por favor, selecione um local para a ocorrência.');
+        return;
+    }
+    const participacaoSelects = document.querySelectorAll('#envolvidos-list select');
+    const envolvidosData = envolvidos.map((pessoa, index) => ({ id: pessoa.id, participacao: participacaoSelects[index].value }));
+
+    // Adiciona o local_id ao payload
+    const payload = { 
+        ...Object.fromEntries(new FormData(e.target).entries()), 
+        envolvidos: envolvidosData,
+        local_id: linkedLocalId // <-- ADICIONADO
+    };
+
+    try {
+        const response = await fetch(`${API_URL}?action=addOcorrencia`, { method: 'POST', body: JSON.stringify(payload), headers: {'Content-Type': 'application/json'} });
+        if (!response.ok) {
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+            throw new Error(errorMsg);
         }
+        const result = await response.json();
+        if (result.success) {
+            e.target.reset();
+            envolvidos = [];
+            removeLocal(); 
+            renderEnvolvidos();
+            carregarOcorrencias();
+            alert('Ocorrência adicionada com sucesso!');
+        } else {
+            alert('Erro ao adicionar ocorrência: ' + (result.message || 'Erro desconhecido.'));
+        }
+    } catch (error) {
+        console.error("Erro ao adicionar ocorrência:", error);
+        alert("Falha na comunicação com o servidor: " + error.message);
+    }
+}
 
         async function salvarEdicaoOcorrencia(e) {
             e.preventDefault();
             const participacaoSelects = document.querySelectorAll('#edit_envolvidos-list select');
             const envolvidosData = envolvidosEdit.map((pessoa, index) => ({ id: pessoa.id, participacao: participacaoSelects[index].value }));
             const payload = { ...Object.fromEntries(new FormData(e.target).entries()), envolvidos: envolvidosData };
-            const response = await fetch(`${API_URL}?action=updateOcorrencia`, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await response.json();
-            if (result.success) { toggleModal('edit-ocorrencia-modal', false); carregarOcorrencias(); } else { alert('Erro ao atualizar: ' + result.message); }
+             try {
+                const response = await fetch(`${API_URL}?action=updateOcorrencia`, { method: 'POST', body: JSON.stringify(payload), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if (result.success) { toggleModal('edit-ocorrencia-modal', false); carregarOcorrencias(); alert('Ocorrência atualizada com sucesso!'); } 
+                else { alert('Erro ao atualizar ocorrência: ' + (result.message || 'Erro desconhecido.')); }
+            } catch (error) {
+                 console.error("Erro ao processar resposta da API:", error);
+                 alert("Falha na comunicação com o servidor: " + error.message);
+            }
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            setupGenericSearch('search-pessoa', 'search-results', 'searchPessoas', addEnvolvido, item => item.nome_completo);
+            setupGenericSearch('search-pessoa', 'search-results', 'searchPessoas', addEnvolvido, item => `${item.nome_completo} (${item.cpf || 'N/A'})`); // Added CPF to search label
             setupGenericSearch('edit-search-pessoa', 'edit-search-results', 'searchPessoas', addEnvolvidoEdit, item => item.nome_completo);
+            setupGenericSearch('search-local', 'search-results-local', 'searchLocais', addLocal, item => `${item.descricao} (${item.rua || 'N/A'}, ${item.municipio || 'N/A'})`);
             carregarOcorrencias();
             confirmDeleteOcorrenciaBtn.addEventListener('click', excluirOcorrencia);
             formAddOcorrencia.addEventListener('submit', salvarAdicaoOcorrencia);
             formEditOcorrencia.addEventListener('submit', salvarEdicaoOcorrencia);
         });
+
+        // Funções para gerenciar a seleção do local
+function addLocal(local) {
+    linkedLocalId = local.id;
+    const linkedLocalDiv = document.getElementById('linked-local');
+    linkedLocalDiv.innerHTML = `        <div class="p-2 border rounded flex justify-between items-center text-sm bg-blue-50">
+            <span><strong class="font-semibold">${escapeHTML(local.descricao)}</strong>: ${escapeHTML(local.rua)}, ${escapeHTML(local.municipio)}</span>
+            <button type="button" onclick="removeLocal()" class="text-red-500 font-bold px-2">X</button>
+        </div>
+    `;
+}
+
+function removeLocal() {
+    linkedLocalId = null;
+    document.getElementById('linked-local').innerHTML = '';
+    document.getElementById('search-local').value = '';
+}
     </script>
 </body>
 </html>

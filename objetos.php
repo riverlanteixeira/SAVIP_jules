@@ -18,15 +18,17 @@
         <div class="container mx-auto px-6 py-3">
             <div class="flex justify-between items-center">
                 <div class="text-xl font-bold">SAVIP</div>
-                <div>
-                    <a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a>
-                    <a href="index.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Pessoas</a>
-                    <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
-                    <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a>
-                    <a href="objetos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a>
-                    <a href="telefones.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a>
-                    <a href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de Vínculos</a>
-                </div>
+                <div><a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a><a
+                        href="index.php" class="px-3 py-2 rounded-md text-sm font-medium bg-gray-900">Pessoas</a>
+                        <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
+                        <a href="locais.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Locais</a>
+                        <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a><a
+                        href="objetos.php"
+                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a><a
+                        href="telefones.php"
+                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a><a
+                        href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de
+                        Vínculos</a></div>
             </div>
         </div>
     </nav>
@@ -62,7 +64,7 @@
 
     <div id="edit-modal" class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white w-11/12 md:max-w-3xl mx-auto rounded-lg shadow-lg z-50">
-            <div class="py-4 px-6"><div class="flex justify-between items-center pb-3 border-b"><p class="text-2xl font-bold">Editar Objeto</p><div class="cursor-pointer z-50" onclick="toggleModal(false)"><span class="text-3xl">&times;</span></div></div>
+            <div class="py-4 px-6"><div class="flex justify-between items-center pb-3 border-b"><p class="text-2xl font-bold">Editar Objeto</p><div class="cursor-pointer z-50" onclick="toggleModal('edit-modal', false)"><span class="text-3xl">&times;</span></div></div>
             <form id="form-edit-objeto" class="py-4">
                 <input type="hidden" id="edit_objeto_id" name="id">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,7 +75,7 @@
                     <div><label for="edit_quantidade" class="block text-sm font-medium">Quantidade</label><input type="number" id="edit_quantidade" name="quantidade" class="mt-1 w-full p-2 border rounded" required></div>
                     <div class="md:col-span-2 lg:col-span-3"><label for="edit_observacoes" class="block text-sm font-medium">Observações</label><textarea id="edit_observacoes" name="observacoes" rows="3" class="mt-1 w-full p-2 border rounded"></textarea></div>
                 </div>
-                <div class="flex justify-end pt-4 mt-4 border-t"><button type="button" class="px-4 bg-gray-200 p-3 rounded-lg mr-2" onclick="toggleModal(false)">Cancelar</button><button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white">Salvar Alterações</button></div>
+                <div class="flex justify-end pt-4 mt-4 border-t"><button type="button" class="px-4 bg-gray-200 p-3 rounded-lg mr-2" onclick="toggleModal('edit-modal', false)">Cancelar</button><button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white">Salvar Alterações</button></div>
             </form>
         </div></div>
     </div>
@@ -85,8 +87,12 @@
         const listaObjetos = document.getElementById('lista-objetos');
         const editModal = document.getElementById('edit-modal');
 
-        function toggleModal(show) { if (show) editModal.classList.add('flex'); else editModal.classList.remove('flex'); }
-
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if (show) modal.classList.add('flex');
+            else modal.classList.remove('flex');
+        }
+        function toggleDetailsModal(show) { const modal = document.getElementById('details-modal'); if (show) modal.classList.add('flex'); else modal.classList.remove('flex'); }
         async function carregarObjetos() {
             try {
                 const response = await fetch(`${API_URL}?action=getObjetos`);
@@ -97,9 +103,9 @@
                         const tr = document.createElement('tr');
                         tr.className = 'border-b hover:bg-gray-50';
                         tr.innerHTML = `
-                            <td class="py-3 px-4">${o.tipo || 'N/A'}</td>
-                            <td class="py-3 px-4">${(o.marca || '') + ' ' + (o.modelo || '')}</td>
-                            <td class="py-3 px-4">${o.numero_serie || 'N/A'}</td>
+                            <td class="py-3 px-4">${escapeHTML(o.tipo) || 'N/A'}</td>
+                            <td class="py-3 px-4">${(escapeHTML(o.marca) || '') + ' ' + (escapeHTML(o.modelo) || '')}</td>
+                            <td class="py-3 px-4">${escapeHTML(o.numero_serie) || 'N/A'}</td>
                             <td class="py-3 px-4 text-center">
                                 <button onclick="abrirModalDetalhes(${o.id})" class="bg-blue-500 text-white font-bold py-1 px-2 text-xs rounded">Detalhes</button>
                                 <button onclick="abrirModalEdicao(${o.id})" class="bg-yellow-500 text-white font-bold py-1 px-2 text-xs rounded ml-2">Editar</button>
@@ -118,9 +124,25 @@
             e.preventDefault();
             const formData = new FormData(addForm);
             const data = Object.fromEntries(formData.entries());
-            const response = await fetch(`${API_URL}?action=addObjeto`, { method: 'POST', body: JSON.stringify(data) });
-            const result = await response.json();
-            if (result.success) { addForm.reset(); carregarObjetos(); } else { alert('Erro: ' + result.message); }
+            try {
+                const response = await fetch(`${API_URL}?action=addObjeto`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if (result.success) { 
+                    addForm.reset(); 
+                    carregarObjetos(); 
+                    alert('Objeto adicionado com sucesso!'); 
+                } else { 
+                    alert('Erro ao adicionar objeto: ' + (result.message || 'Erro desconhecido.')); 
+                }
+            } catch (error) {
+                console.error("Erro ao adicionar objeto:", error);
+                alert("Falha na comunicação com o servidor: " + error.message);
+            }
         });
 
         async function abrirModalEdicao(id) {
@@ -134,7 +156,7 @@
                 document.getElementById('edit_numero_serie').value = o.numero_serie;
                 document.getElementById('edit_quantidade').value = o.quantidade;
                 document.getElementById('edit_observacoes').value = o.observacoes;
-                toggleModal(true);
+                toggleModal('edit-modal', true); // Abre o modal de edição
             }
         }
         
@@ -142,16 +164,44 @@
             e.preventDefault();
             const formData = new FormData(editForm);
             const data = Object.fromEntries(formData.entries());
-            const response = await fetch(`${API_URL}?action=updateObjeto`, { method: 'POST', body: JSON.stringify(data) });
-            const result = await response.json();
-            if(result.success) { toggleModal(false); carregarObjetos(); } else { alert('Erro: ' + result.message); }
+             // Ensure quantidade is a number
+            data.quantidade = parseInt(data.quantidade, 10);
+            try {
+                const response = await fetch(`${API_URL}?action=updateObjeto`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if(result.success) { 
+                    toggleModal('edit-modal', false); 
+                    carregarObjetos(); 
+                    alert('Objeto atualizado com sucesso!'); 
+                } else { 
+                    alert('Erro ao atualizar objeto: ' + (result.message || 'Erro desconhecido.')); 
+                }
+            } catch (error) {
+                console.error("Erro ao atualizar objeto:", error);
+                alert("Falha na comunicação com o servidor: " + error.message);
+            }
         });
 
         async function excluirObjeto(id) {
             if (!confirm('Tem certeza que deseja excluir este objeto?')) return;
-            const response = await fetch(`${API_URL}?action=deleteObjeto`, { method: 'POST', body: JSON.stringify({ id: id }) });
-            const result = await response.json();
-            if (result.success) { carregarObjetos(); } else { alert('Erro: ' + result.message); }
+             try {
+                const response = await fetch(`${API_URL}?action=deleteObjeto`, { method: 'POST', body: JSON.stringify({ id: id }), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if (result.success) { carregarObjetos(); alert('Objeto excluído com sucesso!'); } else { alert('Erro ao excluir objeto: ' + (result.message || 'Erro desconhecido.')); }
+            } catch (error) {
+                console.error("Erro ao excluir objeto:", error);
+                alert("Falha na comunicação com o servidor: " + error.message);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', carregarObjetos);
@@ -163,13 +213,13 @@
             
             if (o) {
                 detailsContent.innerHTML = `
-                    <div class="space-y-3 text-sm">
-                        <div><strong class="block text-gray-500">Tipo:</strong><p>${o.tipo || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Marca:</strong><p>${o.marca || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Modelo:</strong><p>${o.modelo || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Nº de Série:</strong><p>${o.numero_serie || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Quantidade:</strong><p>${o.quantidade || 'N/A'}</p></div>
-                        <div class="col-span-2"><strong class="block text-gray-500">Observações:</strong><p class="whitespace-pre-wrap">${o.observacoes || 'N/A'}</p></div>
+                    <div class="space-y-3 text-sm text-gray-700">
+                        <div><strong class="block text-gray-500">Tipo:</strong><p>${o.tipo ? escapeHTML(o.tipo) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Marca:</strong><p>${o.marca ? escapeHTML(o.marca) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Modelo:</strong><p>${o.modelo ? escapeHTML(o.modelo) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Nº de Série:</strong><p>${o.numero_serie ? escapeHTML(o.numero_serie) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Quantidade:</strong><p>${o.quantidade !== null ? o.quantidade : 'N/A'}</p></div>
+                        <div class="col-span-2"><strong class="block text-gray-500">Observações:</strong><p class="whitespace-pre-wrap">${o.observacoes ? escapeHTML(o.observacoes) : 'N/A'}</p></div>
                     </div>
                 `;
                 document.getElementById('details-modal').classList.add('flex');
@@ -177,6 +227,17 @@
                 alert('Não foi possível carregar os detalhes do objeto.');
             }
         }
+
+        function escapeHTML(str) {
+            if (str === null || typeof str === 'undefined') {
+                return '';
+            }
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+         function fecharModalDetalhes() { toggleDetailsModal(false); }
     </script>
 
     <div id="details-modal" class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
@@ -184,12 +245,12 @@
             <div class="py-4 px-6">
                 <div class="flex justify-between items-center pb-3 border-b">
                     <p class="text-2xl font-bold">Detalhes do Objeto</p>
-                    <div class="cursor-pointer z-50" onclick="document.getElementById('details-modal').classList.remove('flex')">
+                    <div class="cursor-pointer z-50" onclick="fecharModalDetalhes()">
                         <span class="text-3xl">&times;</span>
                     </div>
                 </div>
                 <div id="details-content" class="my-4 p-2">
-                    </div>
+                </div>
                 <div class="flex justify-end pt-2 border-t">
                     <button class="px-4 bg-gray-500 p-2 rounded-lg text-white hover:bg-gray-600" onclick="document.getElementById('details-modal').classList.remove('flex')">Fechar</button>
                 </div>

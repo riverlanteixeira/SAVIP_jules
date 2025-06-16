@@ -5,7 +5,7 @@
 
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root'); // Usuário padrão do WAMP
-define('DB_PASS', '');     // Senha padrão do WAMP é vazia
+define('DB_PASS', '');     // Senha padrão do WAMP é vazia. MUDAR EM PRODUÇÃO!
 define('DB_NAME', 'savip_db'); // O nome do banco de dados que você criou
 
 // Tenta criar uma conexão com o banco de dados

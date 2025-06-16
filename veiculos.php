@@ -19,15 +19,17 @@
         <div class="container mx-auto px-6 py-3">
             <div class="flex justify-between items-center">
                 <div class="text-xl font-bold">SAVIP</div>
-                <div>
-                    <a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a>
-                    <a href="index.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Pessoas</a>
-                    <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
-                    <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a>
-                    <a href="objetos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a>
-                    <a href="telefones.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a>
-                    <a href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de Vínculos</a>
-                </div>
+                <div><a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a><a
+                        href="index.php" class="px-3 py-2 rounded-md text-sm font-medium bg-gray-900">Pessoas</a>
+                        <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
+                        <a href="locais.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Locais</a>
+                        <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a><a
+                        href="objetos.php"
+                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a><a
+                        href="telefones.php"
+                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a><a
+                        href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de
+                        Vínculos</a></div>
             </div>
         </div>
     </nav>
@@ -67,7 +69,7 @@
     <!-- Modal de Edição -->
     <div id="edit-modal" class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white w-11/12 md:max-w-3xl mx-auto rounded-lg shadow-lg z-50">
-            <div class="py-4 px-6"><div class="flex justify-between items-center pb-3 border-b"><p class="text-2xl font-bold">Editar Veículo</p><div class="cursor-pointer z-50" onclick="toggleModal(false)"><span class="text-3xl">&times;</span></div></div>
+            <div class="py-4 px-6"><div class="flex justify-between items-center pb-3 border-b"><p class="text-2xl font-bold">Editar Veículo</p><div class="cursor-pointer z-50" onclick="toggleModal('edit-modal', false)"><span class="text-3xl">&times;</span></div></div>
             <form id="form-edit-veiculo" class="py-4">
                 <input type="hidden" id="edit_veiculo_id" name="id">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -79,7 +81,7 @@
                     <div><label for="edit_renavam" class="block text-sm font-medium">Renavam</label><input type="text" id="edit_renavam" name="renavam" class="mt-1 w-full p-2 border rounded"></div>
                     <div class="lg:col-span-2"><label for="edit_chassi" class="block text-sm font-medium">Chassi</label><input type="text" id="edit_chassi" name="chassi" class="mt-1 w-full p-2 border rounded"></div>
                 </div>
-                <div class="flex justify-end pt-4 mt-4 border-t"><button type="button" class="px-4 bg-gray-200 p-3 rounded-lg mr-2" onclick="toggleModal(false)">Cancelar</button><button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white">Salvar Alterações</button></div>
+                <div class="flex justify-end pt-4 mt-4 border-t"><button type="button" class="px-4 bg-gray-200 p-3 rounded-lg mr-2" onclick="toggleModal('edit-modal', false)">Cancelar</button><button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white">Salvar Alterações</button></div>
             </form>
         </div></div>
     </div>
@@ -91,8 +93,13 @@
         const listaVeiculos = document.getElementById('lista-veiculos');
         const editModal = document.getElementById('edit-modal');
 
-        function toggleModal(show) { if (show) editModal.classList.add('flex'); else editModal.classList.remove('flex'); }
-
+        function toggleModal(modalId, show) { 
+            const modal = document.getElementById(modalId); 
+            if (modal) { // Adicionado para verificar se o modal existe
+                if (show) modal.classList.add('flex'); else modal.classList.remove('flex'); 
+            }
+        }
+        function toggleDetailsModal(show) { const modal = document.getElementById('details-modal'); if (show) modal.classList.add('flex'); else modal.classList.remove('flex'); }
         async function carregarVeiculos() {
             try {
                 const response = await fetch(`${API_URL}?action=getVeiculos`);
@@ -103,9 +110,9 @@
                         const tr = document.createElement('tr');
                         tr.className = 'border-b hover:bg-gray-50';
                         tr.innerHTML = `
-                            <td class="py-3 px-4">${v.placa || 'N/A'}</td>
-                            <td class="py-3 px-4">${v.marca_modelo || 'N/A'}</td>
-                            <td class="py-3 px-4">${v.cor || 'N/A'}</td>
+                            <td class="py-3 px-4">${escapeHTML(v.placa) || 'N/A'}</td>
+                            <td class="py-3 px-4">${escapeHTML(v.marca_modelo) || 'N/A'}</td>
+                            <td class="py-3 px-4">${escapeHTML(v.cor) || 'N/A'}</td>
                             <td class="py-3 px-4 text-center">
                                 <button onclick="abrirModalDetalhes(${v.id})" class="bg-blue-500 text-white font-bold py-1 px-2 text-xs rounded">Detalhes</button>
                                 <button onclick="abrirModalEdicao(${v.id})" class="bg-yellow-500 text-white font-bold py-1 px-2 text-xs rounded ml-2">Editar</button>
@@ -124,9 +131,25 @@
             e.preventDefault();
             const formData = new FormData(addForm);
             const data = Object.fromEntries(formData.entries());
-            const response = await fetch(`${API_URL}?action=addVeiculo`, { method: 'POST', body: JSON.stringify(data) });
-            const result = await response.json();
-            if (result.success) { addForm.reset(); carregarVeiculos(); } else { alert('Erro: ' + result.message); }
+            try {
+                const response = await fetch(`${API_URL}?action=addVeiculo`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if (result.success) { 
+                    addForm.reset(); 
+                    carregarVeiculos(); 
+                    alert('Veículo adicionado com sucesso!'); 
+                } else { 
+                    alert('Erro ao adicionar veículo: ' + (result.message || 'Erro desconhecido.')); 
+                }
+            } catch (error) {
+                console.error("Erro ao adicionar veículo:", error);
+                alert("Falha na comunicação com o servidor: " + error.message);
+            }
         });
 
         async function abrirModalEdicao(id) {
@@ -141,24 +164,44 @@
                 document.getElementById('edit_combustivel').value = v.combustivel;
                 document.getElementById('edit_renavam').value = v.renavam;
                 document.getElementById('edit_chassi').value = v.chassi;
-                toggleModal(true);
-            }
+                toggleModal(true); // Abre o modal de edição
+            } // CORRIGIDO: toggleModal('edit-modal', true)
         }
         
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(editForm);
             const data = Object.fromEntries(formData.entries());
-            const response = await fetch(`${API_URL}?action=updateVeiculo`, { method: 'POST', body: JSON.stringify(data) });
-            const result = await response.json();
-            if(result.success) { toggleModal(false); carregarVeiculos(); } else { alert('Erro: ' + result.message); }
+             try { // CORRIGIDO: Adicionado try-catch
+                const response = await fetch(`${API_URL}?action=updateVeiculo`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`; // CORRIGIDO: Tratamento de erro HTTP
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if(result.success) { toggleModal(false); carregarVeiculos(); alert('Veículo atualizado com sucesso!'); } else { alert('Erro ao atualizar veículo: ' + (result.message || 'Erro desconhecido.')); }
+            } catch (error) {
+                 console.error("Erro ao processar resposta da API:", error);
+                 alert("Falha na comunicação com o servidor: " + error.message); // CORRIGIDO: Mensagem de erro
+            }
         });
 
         async function excluirVeiculo(id) {
             if (!confirm('Tem certeza que deseja excluir este veículo?')) return;
-            const response = await fetch(`${API_URL}?action=deleteVeiculo`, { method: 'POST', body: JSON.stringify({ id: id }) });
-            const result = await response.json();
-            if (result.success) { carregarVeiculos(); } else { alert('Erro: ' + result.message); }
+             try {
+                const response = await fetch(`${API_URL}?action=deleteVeiculo`, { method: 'POST', body: JSON.stringify({ id: id }), headers: {'Content-Type': 'application/json'} }); // CORRIGIDO: Adicionado header
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try { const errData = await response.json(); errorMsg = errData.message || errorMsg; } catch(e){}
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                if (result.success) { carregarVeiculos(); alert('Veículo excluído com sucesso!'); } else { alert('Erro ao excluir veículo: ' + (result.message || 'Erro desconhecido.')); }
+            } catch (error) { 
+                console.error("Erro ao excluir veículo:", error); 
+                alert("Falha na comunicação com o servidor: " + error.message); 
+            }
         }
 
         document.addEventListener('DOMContentLoaded', carregarVeiculos);
@@ -167,17 +210,17 @@
             const response = await fetch(`${API_URL}?action=getVeiculoById&id=${id}`);
             const v = await response.json();
             const detailsContent = document.getElementById('details-content');
-            
+
             if (v) {
                 detailsContent.innerHTML = `
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><strong class="block text-gray-500">Placa:</strong><p>${v.placa || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Marca/Modelo:</strong><p>${v.marca_modelo || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Ano/Modelo:</strong><p>${v.ano_modelo || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Cor:</strong><p>${v.cor || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Combustível:</strong><p>${v.combustivel || 'N/A'}</p></div>
-                        <div><strong class="block text-gray-500">Renavam:</strong><p>${v.renavam || 'N/A'}</p></div>
-                        <div class="col-span-2"><strong class="block text-gray-500">Chassi:</strong><p>${v.chassi || 'N/A'}</p></div>
+                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                        <div><strong class="block text-gray-500">Placa:</strong><p>${v.placa ? escapeHTML(v.placa) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Marca/Modelo:</strong><p>${v.marca_modelo ? escapeHTML(v.marca_modelo) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Ano/Modelo:</strong><p>${v.ano_modelo ? escapeHTML(v.ano_modelo) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Cor:</strong><p>${v.cor ? escapeHTML(v.cor) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Combustível:</strong><p>${v.combustivel ? escapeHTML(v.combustivel) : 'N/A'}</p></div>
+                        <div><strong class="block text-gray-500">Renavam:</strong><p>${v.renavam ? escapeHTML(v.renavam) : 'N/A'}</p></div>
+                        <div class="col-span-2"><strong class="block text-gray-500">Chassi:</strong><p>${v.chassi ? escapeHTML(v.chassi) : 'N/A'}</p></div>
                     </div>
                 `;
                 document.getElementById('details-modal').classList.add('flex');
@@ -185,6 +228,17 @@
                 alert('Não foi possível carregar os detalhes do veículo.');
             }
         }
+
+        function escapeHTML(str) {
+            if (str === null || typeof str === 'undefined') {
+                return '';
+            }
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function fecharModalDetalhes() { toggleDetailsModal(false); }
     </script>
 
     <div id="details-modal" class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
@@ -192,12 +246,12 @@
             <div class="py-4 px-6">
                 <div class="flex justify-between items-center pb-3 border-b">
                     <p class="text-2xl font-bold">Detalhes do Veículo</p>
-                    <div class="cursor-pointer z-50" onclick="document.getElementById('details-modal').classList.remove('flex')">
+                    <div class="cursor-pointer z-50" onclick="fecharModalDetalhes()">
                         <span class="text-3xl">&times;</span>
                     </div>
                 </div>
                 <div id="details-content" class="my-4 p-2">
-                    </div>
+                </div>
                 <div class="flex justify-end pt-2 border-t">
                     <button class="px-4 bg-gray-500 p-2 rounded-lg text-white hover:bg-gray-600" onclick="document.getElementById('details-modal').classList.remove('flex')">Fechar</button>
                 </div>
