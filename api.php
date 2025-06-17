@@ -1,4 +1,7 @@
 <?php
+// error_reporting(E_ALL); // PARA DEPURAÇÃO - Comentado/Removido
+// ini_set('display_errors', 1); // PARA DEPURAÇÃO - Comentado/Removido
+
 // ARQUIVO: api.php (VERSÃO FINAL E VERIFICADA)
 header('Content-Type: application/json; charset=utf-8');
 require 'config.php';
@@ -72,6 +75,7 @@ switch ($action) {
     case 'getGraphData': getGraphData($conn, (int)($_GET['pessoa_id'] ?? 0)); break;
     case 'getGraphDataForCase': getGraphDataForCase($conn, (int)($_GET['caso_id'] ?? 0)); break;
     case 'addVinculoManual': if ($method == 'POST') addVinculoManual($conn, $inputJSON); break; 
+    case 'getTimelineData': getTimelineDataForCase($conn, (int)($_GET['id_entidade'] ?? 0)); break; // Nova action
     
     default:
         echo json_encode(['success' => false, 'message' => 'Ação desconhecida.']);
@@ -712,7 +716,8 @@ function addCaso($conn, $input) {
             $key = $table . 's';
             if (!empty($input[$key])) {
                 $col = $table . '_id';
-                $sql = "INSERT INTO caso_{$table} (caso_id, {$col}" . ($table === 'pessoa' ? ', atuacao' : '') . ") VALUES (?,?" . ($table === 'pessoa' ? ',?' : '') . ")";
+                // Adicionado data_criacao_vinculo com CURRENT_TIMESTAMP
+                $sql = "INSERT INTO caso_{$table} (caso_id, {$col}" . ($table === 'pessoa' ? ', atuacao' : '') . ", data_criacao_vinculo) VALUES (?,?" . ($table === 'pessoa' ? ',?' : '') . ", CURRENT_TIMESTAMP)";
                 $stmt = $conn->prepare($sql);
                 foreach ($input[$key] as $item) {
                     $item_id = ($table === 'pessoa') ? $item['id'] : $item;
@@ -756,7 +761,8 @@ function updateCaso($conn, $input) {
             $key = $table . 's';
             if (!empty($input[$key])) {
                 $col = $table . '_id';
-                $sql = "INSERT INTO caso_{$table} (caso_id, {$col}" . ($table === 'pessoa' ? ', atuacao' : '') . ") VALUES (?,?" . ($table === 'pessoa' ? ',?' : '') . ")";
+                // Adicionado data_criacao_vinculo com CURRENT_TIMESTAMP
+                $sql = "INSERT INTO caso_{$table} (caso_id, {$col}" . ($table === 'pessoa' ? ', atuacao' : '') . ", data_criacao_vinculo) VALUES (?,?" . ($table === 'pessoa' ? ',?' : '') . ", CURRENT_TIMESTAMP)";
                 $stmt = $conn->prepare($sql);
                 foreach ($input[$key] as $item) {
                     $item_id = ($table === 'pessoa') ? $item['id'] : $item;
@@ -1146,9 +1152,11 @@ function addVinculoManual($conn, $input)
         return;
     }
 
-    $stmt = $conn->prepare("INSERT INTO vinculos (entidade1_tipo, entidade1_id, entidade2_tipo, entidade2_id, tipo_vinculo, intensidade, fonte_info) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    // Adicionado data_vinculo com CURRENT_TIMESTAMP
+    $stmt = $conn->prepare("INSERT INTO vinculos (entidade1_tipo, entidade1_id, entidade2_tipo, entidade2_id, tipo_vinculo, intensidade, fonte_info, data_vinculo) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)");
 
     // CORREÇÃO APLICADA AQUI: O último 'i' foi trocado por 's'.
+    // O bind_param permanece o mesmo, pois CURRENT_TIMESTAMP é adicionado diretamente na query
     $stmt->bind_param(
         "sisssss",
         $input['entidade1_tipo'],
@@ -1166,5 +1174,243 @@ function addVinculoManual($conn, $input)
         echo json_encode(['success' => false, 'message' => 'Erro ao criar vínculo: ' . $stmt->error]);
     }
     $stmt->close();
+}
+
+// --- FUNÇÃO PARA OBTER DADOS DA LINHA DO TEMPO DE UM CASO ---
+function getTimelineDataForCase($conn, $caso_id) {
+    if ($caso_id <= 0) {
+        echo json_encode(['success' => false, 'message' => 'ID do caso inválido.', 'data' => []]);
+        return;
+    }
+
+    $timeline_events = [];
+
+    // Função auxiliar para formatar datas
+    function format_timeline_date($date_string) {
+        if (empty($date_string)) return null;
+        try {
+            $date = new DateTime($date_string);
+            return $date->format('Y-m-d H:i:s'); // Formato ISO 8601
+        } catch (Exception $e) {
+            return null; // Retorna null se a data for inválida
+        }
+    }
+
+    // 1. Coletar Evento de Criação do Caso e Informações Iniciais
+    // Removido data_conclusao da query, adicionado id
+    $stmt_caso = $conn->prepare("SELECT id, inquerito_policial, data_criacao, relato_fatos, investigacoes, conclusao FROM casos WHERE id = ?");
+    $stmt_caso->bind_param("i", $caso_id);
+    if (!$stmt_caso->execute()) {
+        error_log("Erro ao executar stmt_caso: " . $stmt_caso->error);
+        echo json_encode(['success' => false, 'message' => 'Erro ao buscar dados do caso (exec).', 'data' => [], 'debug_error' => $stmt_caso->error]);
+        $stmt_caso->close();
+        return;
+    }
+    $caso_result = $stmt_caso->get_result();
+    if (!$caso_result) {
+        error_log("Erro ao obter resultado de stmt_caso: " . $conn->error);
+        echo json_encode(['success' => false, 'message' => 'Erro ao buscar dados do caso (result).', 'data' => [], 'debug_error' => $conn->error]);
+        $stmt_caso->close();
+        return;
+    }
+    $caso = $caso_result->fetch_assoc(); // $caso agora contém 'id' do caso.
+    $stmt_caso->close();
+
+    if (!$caso) {
+        echo json_encode(['success' => false, 'message' => 'Caso não encontrado.', 'data' => []]);
+        return;
+    }
+
+    $data_criacao_caso_formatada = format_timeline_date($caso['data_criacao']);
+
+    if ($data_criacao_caso_formatada) {
+        $timeline_events[] = [
+            'id' => 'caso_' . $caso_id,
+            'content' => 'Início do Caso: ' . htmlspecialchars($caso['inquerito_policial'] ?? 'N/A'),
+            'start' => $data_criacao_caso_formatada,
+            'group' => 'Caso',
+            'type' => 'box'
+        ];
+
+        if (!empty($caso['relato_fatos'])) {
+            $timeline_events[] = [
+                'id' => 'caso_relato_' . $caso_id,
+                'content' => 'Relato dos Fatos Registrado',
+                'start' => $data_criacao_caso_formatada,
+                'group' => 'Caso'
+            ];
+        }
+
+        if (!empty($caso['investigacoes'])) {
+             $timeline_events[] = [
+                'id' => 'caso_investigacoes_' . $caso_id,
+                'content' => 'Início das Diligências/Investigações',
+                'start' => $data_criacao_caso_formatada,
+                'group' => 'Caso'
+            ];
+        }
+    }
+    
+    // Função para verificar e logar erros de statement
+    function execute_and_log_error($stmt, $context_message) {
+        if (!$stmt->execute()) {
+            error_log("Erro em '$context_message': " . $stmt->error);
+            // Não envia json_encode aqui para não interromper o fluxo principal se for warning
+            return null; 
+        }
+        $result = $stmt->get_result();
+        if (!$result) {
+            error_log("Erro ao obter resultado em '$context_message': " . $stmt->error); // ou $conn->error
+            return null;
+        }
+        return $result;
+    }
+
+    // 2. Coletar Ocorrências Vinculadas ao Caso
+    $stmt_oc = $conn->prepare("SELECT o.id, o.numero_bo, o.data_fato, co.data_criacao_vinculo FROM caso_ocorrencia co JOIN ocorrencias o ON co.ocorrencia_id = o.id WHERE co.caso_id = ?");
+    $stmt_oc->bind_param("i", $caso_id);
+    $result_oc = execute_and_log_error($stmt_oc, "Coleta de Ocorrências");
+    if ($result_oc) {
+        while ($ocorrencia = $result_oc->fetch_assoc()) {
+            $data_vinculo_formatada = format_timeline_date($ocorrencia['data_criacao_vinculo']);
+            if ($data_vinculo_formatada) {
+                $data_fato_formatada = format_timeline_date($ocorrencia['data_fato']);
+                $timeline_events[] = [
+                    'id' => 'ocorrencia_' . $ocorrencia['id'] . '_caso_' . $caso_id,
+                    'content' => 'Ocorrência Vinculada: BO ' . htmlspecialchars($ocorrencia['numero_bo'] ?? 'N/A') . ($data_fato_formatada ? ' (Fato: ' . date('d/m/Y', strtotime($data_fato_formatada)) . ')' : ''),
+                    'start' => $data_vinculo_formatada,
+                    'group' => 'Ocorrências Vinculadas'
+                ];
+            }
+        }
+        $stmt_oc->close();
+    }
+
+    // 3. Coletar Pessoas Vinculadas ao Caso
+    $stmt_pe = $conn->prepare("SELECT p.id, p.nome_completo, cp.atuacao, cp.data_criacao_vinculo FROM caso_pessoa cp JOIN pessoas p ON cp.pessoa_id = p.id WHERE cp.caso_id = ?");
+    $stmt_pe->bind_param("i", $caso_id);
+    $result_pe = execute_and_log_error($stmt_pe, "Coleta de Pessoas");
+    if ($result_pe) {
+        while ($pessoa = $result_pe->fetch_assoc()) {
+            $data_vinculo_formatada = format_timeline_date($pessoa['data_criacao_vinculo']);
+            if ($data_vinculo_formatada) {
+                $timeline_events[] = [
+                    'id' => 'vinculo_pessoa_' . $pessoa['id'] . '_caso_' . $caso_id,
+                    'content' => 'Pessoa Vinculada: ' . htmlspecialchars($pessoa['nome_completo'] ?? 'N/A') . (!empty($pessoa['atuacao']) ? ' (Atuação: ' . htmlspecialchars($pessoa['atuacao']) . ')' : ''),
+                    'start' => $data_vinculo_formatada,
+                    'group' => 'Pessoas Vinculadas'
+                ];
+            }
+        }
+        $stmt_pe->close();
+    }
+
+    // 4. Coletar Veículos Vinculados ao Caso
+    $stmt_ve = $conn->prepare("SELECT v.id, v.placa, v.marca_modelo, cv.data_criacao_vinculo FROM caso_veiculo cv JOIN veiculos v ON cv.veiculo_id = v.id WHERE cv.caso_id = ?");
+    $stmt_ve->bind_param("i", $caso_id);
+    $result_ve = execute_and_log_error($stmt_ve, "Coleta de Veículos");
+    if ($result_ve) {
+        while ($veiculo = $result_ve->fetch_assoc()) {
+            $data_vinculo_formatada = format_timeline_date($veiculo['data_criacao_vinculo']);
+            if ($data_vinculo_formatada) {
+                $timeline_events[] = [
+                    'id' => 'vinculo_veiculo_' . $veiculo['id'] . '_caso_' . $caso_id,
+                    'content' => 'Veículo Vinculado: ' . htmlspecialchars($veiculo['placa'] ?? ($veiculo['marca_modelo'] ?? 'N/A')),
+                    'start' => $data_vinculo_formatada,
+                    'group' => 'Veículos Vinculados'
+                ];
+            }
+        }
+        $stmt_ve->close();
+    }
+
+    // 5. Coletar Objetos Vinculados ao Caso
+    $stmt_obj = $conn->prepare("SELECT o.id, o.tipo, o.marca, co.data_criacao_vinculo FROM caso_objeto co JOIN objetos o ON co.objeto_id = o.id WHERE co.caso_id = ?");
+    $stmt_obj->bind_param("i", $caso_id);
+    $result_obj = execute_and_log_error($stmt_obj, "Coleta de Objetos");
+    if ($result_obj) {
+        while ($objeto = $result_obj->fetch_assoc()) {
+            $data_vinculo_formatada = format_timeline_date($objeto['data_criacao_vinculo']);
+            if ($data_vinculo_formatada) {
+                $timeline_events[] = [
+                    'id' => 'vinculo_objeto_' . $objeto['id'] . '_caso_' . $caso_id,
+                    'content' => 'Objeto Vinculado: ' . htmlspecialchars($objeto['tipo'] ?? ($objeto['marca'] ?? 'N/A')),
+                    'start' => $data_vinculo_formatada,
+                    'group' => 'Objetos Vinculados'
+                ];
+            }
+        }
+        $stmt_obj->close();
+    }
+
+    // 6. Coletar Telefones Vinculados ao Caso
+    $stmt_tel = $conn->prepare("SELECT t.id, t.numero, ct.data_criacao_vinculo FROM caso_telefone ct JOIN telefones t ON ct.telefone_id = t.id WHERE ct.caso_id = ?");
+    $stmt_tel->bind_param("i", $caso_id);
+    $result_tel = execute_and_log_error($stmt_tel, "Coleta de Telefones");
+    if($result_tel) {
+        while ($telefone = $result_tel->fetch_assoc()) {
+            $data_vinculo_formatada = format_timeline_date($telefone['data_criacao_vinculo']);
+            if ($data_vinculo_formatada) {
+                $timeline_events[] = [
+                    'id' => 'vinculo_telefone_' . $telefone['id'] . '_caso_' . $caso_id,
+                    'content' => 'Telefone Vinculado: ' . htmlspecialchars($telefone['numero'] ?? 'N/A'),
+                    'start' => $data_vinculo_formatada,
+                    'group' => 'Telefones Vinculados'
+                ];
+            }
+        }
+        $stmt_tel->close();
+    }
+    
+    // 7. Evento de Conclusão do Caso (Ajustado)
+    if (!empty($caso['conclusao'])) { // Verifica apenas se o texto da conclusão existe
+        $data_conclusao_para_evento = $caso['data_criacao']; // Default para data de criação do caso
+
+        if (!empty($timeline_events)) {
+            $last_event_timestamp = null;
+            $temp_data_conclusao = $data_conclusao_para_evento;
+
+            foreach ($timeline_events as $evt) {
+                if (isset($evt['start'])) {
+                    $current_event_ts_check = strtotime($evt['start']);
+                    if ($current_event_ts_check !== false && ($last_event_timestamp === null || $current_event_ts_check > $last_event_timestamp)) {
+                        $last_event_timestamp = $current_event_ts_check;
+                        $temp_data_conclusao = $evt['start'];
+                    }
+                }
+            }
+            // Usar a data do último evento se for mais recente que a data de criação do caso
+            if ($last_event_timestamp !== null && strtotime($temp_data_conclusao) > strtotime($caso['data_criacao'])) {
+                 $data_conclusao_para_evento = $temp_data_conclusao;
+            }
+        }
+        
+        $start_date_for_conclusao = format_timeline_date($data_conclusao_para_evento);
+        if ($start_date_for_conclusao) { // Apenas adiciona se a data for válida
+             $timeline_events[] = [
+                'id'      => 'caso_conclusao_' . $caso['id'], // Usar $caso['id'] que foi selecionado
+                'content' => 'Conclusão do Caso Registrada: ' . htmlspecialchars(substr($caso['conclusao'], 0, 100) . (strlen($caso['conclusao']) > 100 ? '...' : '')),
+                'start'   => $start_date_for_conclusao,
+                'group'   => 'Caso',
+                'type'    => 'box'
+            ];
+        }
+    }
+
+    // Ordenar eventos por data 'start'
+    // A ordenação pode falhar se alguma data for null
+    usort($timeline_events, function($a, $b) {
+        // Verifica se 'start' é válido antes de criar DateTime
+        $startA = isset($a['start']) ? @(new DateTime($a['start'])) : null;
+        $startB = isset($b['start']) ? @(new DateTime($b['start'])) : null;
+
+        if (!$startA && !$startB) return 0;
+        if (!$startA) return 1; // $a vem depois se não tiver data válida
+        if (!$startB) return -1; // $b vem depois se não tiver data válida
+        
+        return $startA <=> $startB;
+    });
+
+    echo json_encode(['success' => true, 'data' => $timeline_events]);
 }
 ?>

@@ -7,6 +7,8 @@
     <title>SAVIP - Gestão de Casos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -162,6 +164,7 @@
         </div>
     </div>
 
+    <!-- Modal Detalhes do Caso -->
     <div id="case-details-modal"
         class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white w-11/12 md:max-w-3xl mx-auto rounded-lg shadow-lg z-50">
@@ -178,6 +181,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Exclusão do Caso -->
     <div id="delete-case-modal"
         class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50">
@@ -195,6 +200,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Edição do Caso -->
     <div id="edit-case-modal"
         class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white w-11/12 md:max-w-4xl mx-auto rounded-lg shadow-lg z-50">
@@ -294,9 +301,26 @@
         </div>
     </div>
 
+    <!-- Modal Linha do Tempo -->
+    <div id="timeline-modal" class="modal fixed w-full h-full top-0 left-0 items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white w-11/12 md:max-w-4xl mx-auto rounded-lg shadow-lg z-50">
+            <div class="py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3 border-b">
+                    <p class="text-2xl font-bold">Linha do Tempo do Caso</p>
+                    <div class="cursor-pointer z-50" onclick="toggleModal('timeline-modal', false)"><span class="text-3xl">&times;</span></div>
+                </div>
+                <div id="timeline-container" class="my-4 h-[400px] md:h-[500px] p-2 overflow-y-auto border rounded">
+                    <!-- A linha do tempo será renderizada aqui -->
+                </div>
+                <div class="flex justify-end pt-2 border-t">
+                    <button class="px-4 bg-gray-500 p-2 rounded-lg text-white hover:bg-gray-600" onclick="toggleModal('timeline-modal', false)">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'api.php';
-        // Removidas as arrays globais individuais, serão gerenciadas pelo linkedItemsManager
 
         const formAddCaso = document.getElementById('form-add-caso');
         const formEditCaso = document.getElementById('form-edit-caso');
@@ -440,10 +464,38 @@
             }
         };
 
-        async function carregarCasos() { const response = await fetch(`${API_URL}?action=getCasos`); const casos = await response.json(); const listaCasos = document.getElementById('lista-casos'); listaCasos.innerHTML = ''; if (casos.length > 0) { casos.forEach(item => { const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50'; const totalVinculos = parseInt(item.total_ocorrencias) + parseInt(item.total_pessoas) + parseInt(item.total_veiculos) + parseInt(item.total_objetos) + parseInt(item.total_telefones); tr.innerHTML = `<td class="py-3 px-4">${item.id}</td><td class="py-3 px-4">${item.inquerito_policial || 'N/A'}</td><td class="py-3 px-4">${new Date(item.data_criacao).toLocaleDateString('pt-BR')}</td><td class="py-3 px-4 text-center">${totalVinculos}</td><td class="py-3 px-4 text-center"><a href="gerar_dossie_caso.php?id=${item.id}" target="_blank" class="bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Dossiê</a><button onclick="abrirModalDetalhesCaso(${item.id})" class="bg-blue-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Detalhes</button><button onclick="abrirModalEdicaoCaso(${item.id})" class="bg-yellow-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Editar</button><button onclick="abrirModalExclusaoCaso(${item.id}, '${item.inquerito_policial || 'ID ' + item.id}')" class="bg-red-600 text-white font-bold py-1 px-2 rounded text-xs ml-2">Excluir</button></td>`; listaCasos.appendChild(tr); }); } else { listaCasos.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum caso criado.</td></tr>'; } }
+        async function carregarCasos() {
+            const response = await fetch(`${API_URL}?action=getCasos`);
+            const casos = await response.json();
+            const listaCasos = document.getElementById('lista-casos');
+            listaCasos.innerHTML = '';
+            if (casos.length > 0) {
+                casos.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b hover:bg-gray-50';
+                    const totalVinculos = parseInt(item.total_ocorrencias) + parseInt(item.total_pessoas) + parseInt(item.total_veiculos) + parseInt(item.total_objetos) + parseInt(item.total_telefones);
+                    tr.innerHTML = `
+                        <td class="py-3 px-4">${item.id}</td>
+                        <td class="py-3 px-4">${item.inquerito_policial || 'N/A'}</td>
+                        <td class="py-3 px-4">${new Date(item.data_criacao).toLocaleDateString('pt-BR')}</td>
+                        <td class="py-3 px-4 text-center">${totalVinculos}</td>
+                        <td class="py-3 px-4 text-center">
+                            <a href="gerar_dossie_caso.php?id=${item.id}" target="_blank" class="bg-green-600 text-white font-bold py-1 px-2 rounded text-xs">Dossiê</a>
+                            <button onclick="abrirModalDetalhesCaso(${item.id})" class="bg-blue-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Detalhes</button>
+                            <button onclick="abrirModalLinhaDoTempo(${item.id})" class="bg-purple-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Linha do Tempo</button>
+                            <button onclick="abrirModalEdicaoCaso(${item.id})" class="bg-yellow-500 text-white font-bold py-1 px-2 rounded text-xs ml-2">Editar</button>
+                            <button onclick="abrirModalExclusaoCaso(${item.id}, '${item.inquerito_policial || 'ID ' + item.id}')" class="bg-red-600 text-white font-bold py-1 px-2 rounded text-xs ml-2">Excluir</button>
+                        </td>`;
+                    listaCasos.appendChild(tr);
+                });
+            } else {
+                listaCasos.innerHTML = '<tr><td colspan="5" class="text-center p-8">Nenhum caso criado.</td></tr>';
+            }
+        }
+
         async function abrirModalDetalhesCaso(id) {
-    const content = document.getElementById('case-details-content');
-    content.innerHTML = '<p>Carregando...</p>';
+            const content = document.getElementById('case-details-content');
+            content.innerHTML = '<p>Carregando...</p>';
     toggleModal('case-details-modal', true);
     
     const response = await fetch(`${API_URL}?action=getCasoDetails&id=${id}`);
@@ -605,6 +657,65 @@
             formAddCaso.addEventListener('submit', salvarAdicaoCaso);
             formEditCaso.addEventListener('submit', salvarEdicaoCaso);
         });
+
+        async function abrirModalLinhaDoTempo(caso_id) {
+            const modalId = 'timeline-modal';
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = '<p class="text-center p-4">Carregando linha do tempo...</p>';
+            toggleModal(modalId, true);
+
+            try {
+                const response = await fetch(`${API_URL}?action=getTimelineData&id_entidade=${caso_id}`);
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    container.innerHTML = ''; // Limpa a mensagem de carregando
+                    
+                    const groupSet = new Set();
+                    result.data.forEach(item => {
+                        if(item.group) groupSet.add(item.group);
+                    });
+                    const groups = new vis.DataSet();
+                    Array.from(groupSet).forEach((groupName, index) => {
+                        groups.add({id: groupName, content: groupName});
+                    });
+
+                    const items = new vis.DataSet(result.data.map(event => ({
+                        ...event,
+                        start: event.start 
+                    })));
+
+                    const options = {
+                        locale: 'pt-br', 
+                        orientation: { axis: 'top' },
+                        zoomable: true,
+                        editable: false, 
+                        margin: {
+                            item: 10, 
+                            axis: 5   
+                        },
+                        stack: true, 
+                        groupOrder: 'content' 
+                    };
+
+                    if (container.visTimeline) {
+                        container.visTimeline.destroy();
+                    }
+                    container.visTimeline = new vis.Timeline(container, items, groups, options);
+
+                } else if (result.success && result.data && result.data.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-500 p-4">Nenhum evento encontrado para este caso.</p>';
+                } else {
+                    container.innerHTML = `<p class="text-center text-red-500 p-4">Erro ao carregar linha do tempo: ${result.message || 'Resposta inesperada da API.'}</p>`;
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados da linha do tempo:", error);
+                container.innerHTML = `<p class="text-center text-red-500 p-4">Falha ao comunicar com o servidor para obter dados da linha do tempo. (${error.message})</p>`;
+            }
+        }
     </script>
 </body>
 
