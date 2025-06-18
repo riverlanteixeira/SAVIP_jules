@@ -52,6 +52,12 @@
                     <div><label for="combustivel" class="block text-sm font-medium">Combustível</label><input type="text" id="combustivel" name="combustivel" class="mt-1 w-full p-2 border rounded"></div>
                     <div><label for="renavam" class="block text-sm font-medium">Renavam</label><input type="text" id="renavam" name="renavam" class="mt-1 w-full p-2 border rounded"></div>
                     <div class="lg:col-span-2"><label for="chassi" class="block text-sm font-medium">Chassi</label><input type="text" id="chassi" name="chassi" class="mt-1 w-full p-2 border rounded"></div>
+                    <div class="lg:col-span-4 mt-4">
+                        <label for="is_high_interest" class="flex items-center">
+                            <input type="checkbox" id="is_high_interest" name="is_high_interest" value="1" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Marcar como Alto Interesse</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="mt-8 text-right"><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar Veículo</button></div>
             </form>
@@ -80,6 +86,12 @@
                     <div><label for="edit_combustivel" class="block text-sm font-medium">Combustível</label><input type="text" id="edit_combustivel" name="combustivel" class="mt-1 w-full p-2 border rounded"></div>
                     <div><label for="edit_renavam" class="block text-sm font-medium">Renavam</label><input type="text" id="edit_renavam" name="renavam" class="mt-1 w-full p-2 border rounded"></div>
                     <div class="lg:col-span-2"><label for="edit_chassi" class="block text-sm font-medium">Chassi</label><input type="text" id="edit_chassi" name="chassi" class="mt-1 w-full p-2 border rounded"></div>
+                    <div class="lg:col-span-4 mt-4">
+                        <label for="edit_is_high_interest" class="flex items-center">
+                            <input type="checkbox" id="edit_is_high_interest" name="is_high_interest" value="1" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Marcar como Alto Interesse</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="flex justify-end pt-4 mt-4 border-t"><button type="button" class="px-4 bg-gray-200 p-3 rounded-lg mr-2" onclick="toggleModal('edit-modal', false)">Cancelar</button><button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white">Salvar Alterações</button></div>
             </form>
@@ -131,6 +143,7 @@
             e.preventDefault();
             const formData = new FormData(addForm);
             const data = Object.fromEntries(formData.entries());
+            data.is_high_interest = document.getElementById('is_high_interest').checked ? '1' : '0';
             try {
                 const response = await fetch(`${API_URL}?action=addVeiculo`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
                 if (!response.ok) {
@@ -140,7 +153,8 @@
                 }
                 const result = await response.json();
                 if (result.success) { 
-                    addForm.reset(); 
+                    addForm.reset();
+                    document.getElementById('is_high_interest').checked = false; 
                     carregarVeiculos(); 
                     alert('Veículo adicionado com sucesso!'); 
                 } else { 
@@ -164,15 +178,17 @@
                 document.getElementById('edit_combustivel').value = v.combustivel;
                 document.getElementById('edit_renavam').value = v.renavam;
                 document.getElementById('edit_chassi').value = v.chassi;
-                toggleModal(true); // Abre o modal de edição
-            } // CORRIGIDO: toggleModal('edit-modal', true)
+                document.getElementById('edit_is_high_interest').checked = !!parseInt(v.is_high_interest);
+                toggleModal('edit-modal', true);
+            }
         }
         
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(editForm);
             const data = Object.fromEntries(formData.entries());
-             try { // CORRIGIDO: Adicionado try-catch
+            data.is_high_interest = document.getElementById('edit_is_high_interest').checked ? '1' : '0';
+             try { 
                 const response = await fetch(`${API_URL}?action=updateVeiculo`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
                 if (!response.ok) {
                     let errorMsg = `HTTP error! status: ${response.status}`; // CORRIGIDO: Tratamento de erro HTTP

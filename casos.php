@@ -603,6 +603,14 @@
                     linkedItemsManager.reset('add');
                     carregarCasos();
                     alert('Caso adicionado com sucesso!');
+                    // Relevance alert check
+                    if (result.relevance_alert && result.relevant_entities && result.relevant_entities.length > 0) {
+                        let alertMessage = "Alerta de Relevância no Caso Adicionado:\n";
+                        result.relevant_entities.forEach(entity => {
+                            alertMessage += `- ${entity.label} (ID: ${entity.id}) é de alto interesse.\n`;
+                        });
+                        alert(alertMessage);
+                    }
                 } else {
                     alert('Erro ao adicionar caso: ' + (result.message || 'Erro desconhecido.'));
                 }
@@ -629,6 +637,14 @@
                     toggleModal('edit-case-modal', false);
                     carregarCasos();
                     alert('Caso atualizado com sucesso!');
+                    // Relevance alert check
+                    if (result.relevance_alert && result.relevant_entities && result.relevant_entities.length > 0) {
+                        let alertMessage = "Alerta de Relevância no Caso Atualizado:\n";
+                        result.relevant_entities.forEach(entity => {
+                            alertMessage += `- ${entity.label} (ID: ${entity.id}) é de alto interesse.\n`;
+                        });
+                        alert(alertMessage);
+                    }
                 } else {
                     alert('Erro ao atualizar caso: ' + (result.message || 'Erro desconhecido.'));
                 }

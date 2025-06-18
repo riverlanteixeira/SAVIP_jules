@@ -245,9 +245,10 @@ function addPessoa($conn, $input, $files)
 
     $conn->begin_transaction();
     try {
+        $is_high_interest = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
         $stmt = $conn->prepare(
-            "INSERT INTO pessoas (nome_completo, alcunha, cpf, rg, sexo, data_nascimento, nome_pai, nome_mae, foto_path, naturalidade, nacionalidade, cor_cabelo, cor_olhos, cor_pele, faixa_etaria, historico_delitos, sentencas, periodos_reclusao, atuacao_geografica, redes_sociais) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO pessoas (nome_completo, alcunha, cpf, rg, sexo, data_nascimento, nome_pai, nome_mae, foto_path, naturalidade, nacionalidade, cor_cabelo, cor_olhos, cor_pele, faixa_etaria, historico_delitos, sentencas, periodos_reclusao, atuacao_geografica, redes_sociais, is_high_interest) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
         // Atribuição segura dos campos que podem não existir no formulário
@@ -272,7 +273,7 @@ function addPessoa($conn, $input, $files)
         $redes_sociais = $input['redes_sociais'] ?? null;
 
         $stmt->bind_param(
-            "ssssssssssssssssssss",
+            "ssssssssssssssssssssi",
             $nome_completo,
             $alcunha,
             $cpf,
@@ -292,7 +293,8 @@ function addPessoa($conn, $input, $files)
             $sentencas,
             $periodos_reclusao,
             $atuacao_geografica,
-            $redes_sociais
+            $redes_sociais,
+            $is_high_interest
         );
 
         $stmt->execute();
@@ -357,11 +359,12 @@ function updatePessoa($conn, $input, $files) {
     
     $conn->begin_transaction(); 
     try { 
+        $is_high_interest = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
         $stmt = $conn->prepare(
             "UPDATE pessoas SET 
              nome_completo=?, alcunha=?, cpf=?, rg=?, sexo=?, data_nascimento=?, nome_pai=?, nome_mae=?, foto_path=?,
              naturalidade=?, nacionalidade=?, cor_cabelo=?, cor_olhos=?, cor_pele=?, faixa_etaria=?, 
-             historico_delitos=?, sentencas=?, periodos_reclusao=?, atuacao_geografica=?, redes_sociais=?
+             historico_delitos=?, sentencas=?, periodos_reclusao=?, atuacao_geografica=?, redes_sociais=?, is_high_interest=?
              WHERE id=?"
         );
         
@@ -378,11 +381,11 @@ function updatePessoa($conn, $input, $files) {
         $periodos_reclusao = $input['periodos_reclusao'] ?? null; $atuacao_geografica = $input['atuacao_geografica'] ?? null;
         $redes_sociais = $input['redes_sociais'] ?? null;
 
-        $stmt->bind_param("ssssssssssssssssssssi", 
+        $stmt->bind_param("ssssssssssssssssssssii", 
             $nome_completo, $alcunha, $cpf, $rg, $sexo, $data_nascimento, $nome_pai, $nome_mae, $foto_path,
             $naturalidade, $nacionalidade, $cor_cabelo, $cor_olhos, $cor_pele, $faixa_etaria, 
             $historico_delitos, $sentencas, $periodos_reclusao, $atuacao_geografica, $redes_sociais,
-            $id
+            $is_high_interest, $id
         ); 
         $stmt->execute(); 
         $stmt->close(); 
@@ -732,8 +735,91 @@ function addCaso($conn, $input) {
                 $stmt->close();
             }
         }
+
+        // Relevance check logic starts here
+        $response_data = ['success' => true, 'message' => 'Caso criado com sucesso!'];
+        $relevance_alert_details = [];
+        $entity_config = [
+            'pessoa'   => ['table' => 'pessoas',   'label_field' => 'nome_completo', 'display_prefix' => 'Pessoa: '],
+            'veiculo'  => ['table' => 'veiculos',  'label_field' => 'placa',         'display_prefix' => 'Veículo: '],
+            'objeto'   => ['table' => 'objetos',   'label_field' => 'tipo',          'display_prefix' => 'Objeto: '],
+            'telefone' => ['table' => 'telefones', 'label_field' => 'numero',        'display_prefix' => 'Telefone: ']
+        ];
+        $all_linked_entities_for_relevance_check = [];
+        $checked_ids_for_relevance_in_case = [];
+
+        if (!empty($input['pessoas']) && is_array($input['pessoas'])) {
+            foreach ($input['pessoas'] as $p_item) {
+                if (isset($p_item['id']) && !empty($p_item['id'])) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'pessoa', 'id' => (int)$p_item['id']];
+                }
+            }
+        }
+        if (!empty($input['veiculos']) && is_array($input['veiculos'])) {
+            foreach ($input['veiculos'] as $v_id) {
+                if (!empty($v_id)) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'veiculo', 'id' => (int)$v_id];
+                }
+            }
+        }
+        if (!empty($input['objetos']) && is_array($input['objetos'])) {
+            foreach ($input['objetos'] as $o_id) {
+                if (!empty($o_id)) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'objeto', 'id' => (int)$o_id];
+                }
+            }
+        }
+        if (!empty($input['telefones']) && is_array($input['telefones'])) {
+            foreach ($input['telefones'] as $t_id) {
+                if (!empty($t_id)) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'telefone', 'id' => (int)$t_id];
+                }
+            }
+        }
+
+        foreach ($all_linked_entities_for_relevance_check as $entity) {
+            $entity_key = $entity['type'] . '_' . $entity['id'];
+            if (in_array($entity_key, $checked_ids_for_relevance_in_case)) {
+                continue;
+            }
+            $checked_ids_for_relevance_in_case[] = $entity_key;
+
+            if (array_key_exists($entity['type'], $entity_config)) {
+                $config = $entity_config[$entity['type']];
+                $sql_check_column = "SHOW COLUMNS FROM {$config['table']} LIKE 'is_high_interest'";
+                $result_check_column = $conn->query($sql_check_column);
+                
+                if ($result_check_column && $result_check_column->num_rows > 0) {
+                    $sql_check = "SELECT {$config['label_field']}, is_high_interest FROM {$config['table']} WHERE id = ?";
+                    $stmt_check = $conn->prepare($sql_check);
+                    if ($stmt_check) {
+                        $stmt_check->bind_param("i", $entity['id']);
+                        if ($stmt_check->execute()) {
+                            $result_check = $stmt_check->get_result();
+                            if ($row_check = $result_check->fetch_assoc()) {
+                                if (!empty($row_check['is_high_interest'])) {
+                                    $relevance_alert_details[] = [
+                                        'type' => $entity['type'],
+                                        'id' => $entity['id'],
+                                        'label' => $config['display_prefix'] . $row_check[$config['label_field']]
+                                    ];
+                                }
+                            }
+                        }
+                        $stmt_check->close();
+                    }
+                }
+            }
+        }
+
+        if (!empty($relevance_alert_details)) {
+            $response_data['relevance_alert'] = true;
+            $response_data['relevant_entities'] = $relevance_alert_details;
+        }
+        // Relevance check logic ends here
+
         $conn->commit();
-        echo json_encode(['success'=>true]);
+        echo json_encode($response_data);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
@@ -777,8 +863,91 @@ function updateCaso($conn, $input) {
                 $stmt->close();
             }
         }
+
+        // Relevance check logic starts here
+        $response_data = ['success' => true, 'message' => 'Caso atualizado com sucesso!'];
+        $relevance_alert_details = [];
+        $entity_config = [
+            'pessoa'   => ['table' => 'pessoas',   'label_field' => 'nome_completo', 'display_prefix' => 'Pessoa: '],
+            'veiculo'  => ['table' => 'veiculos',  'label_field' => 'placa',         'display_prefix' => 'Veículo: '],
+            'objeto'   => ['table' => 'objetos',   'label_field' => 'tipo',          'display_prefix' => 'Objeto: '],
+            'telefone' => ['table' => 'telefones', 'label_field' => 'numero',        'display_prefix' => 'Telefone: ']
+        ];
+        $all_linked_entities_for_relevance_check = [];
+        $checked_ids_for_relevance_in_case = [];
+
+        if (!empty($input['pessoas']) && is_array($input['pessoas'])) {
+            foreach ($input['pessoas'] as $p_item) {
+                if (isset($p_item['id']) && !empty($p_item['id'])) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'pessoa', 'id' => (int)$p_item['id']];
+                }
+            }
+        }
+        if (!empty($input['veiculos']) && is_array($input['veiculos'])) {
+            foreach ($input['veiculos'] as $v_id) {
+                if (!empty($v_id)) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'veiculo', 'id' => (int)$v_id];
+                }
+            }
+        }
+        if (!empty($input['objetos']) && is_array($input['objetos'])) {
+            foreach ($input['objetos'] as $o_id) {
+                if (!empty($o_id)) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'objeto', 'id' => (int)$o_id];
+                }
+            }
+        }
+        if (!empty($input['telefones']) && is_array($input['telefones'])) {
+            foreach ($input['telefones'] as $t_id) {
+                if (!empty($t_id)) {
+                    $all_linked_entities_for_relevance_check[] = ['type' => 'telefone', 'id' => (int)$t_id];
+                }
+            }
+        }
+
+        foreach ($all_linked_entities_for_relevance_check as $entity) {
+            $entity_key = $entity['type'] . '_' . $entity['id'];
+            if (in_array($entity_key, $checked_ids_for_relevance_in_case)) {
+                continue;
+            }
+            $checked_ids_for_relevance_in_case[] = $entity_key;
+
+            if (array_key_exists($entity['type'], $entity_config)) {
+                $config = $entity_config[$entity['type']];
+                $sql_check_column = "SHOW COLUMNS FROM {$config['table']} LIKE 'is_high_interest'";
+                $result_check_column = $conn->query($sql_check_column);
+
+                if ($result_check_column && $result_check_column->num_rows > 0) {
+                    $sql_check = "SELECT {$config['label_field']}, is_high_interest FROM {$config['table']} WHERE id = ?";
+                    $stmt_check = $conn->prepare($sql_check);
+                    if ($stmt_check) {
+                        $stmt_check->bind_param("i", $entity['id']);
+                        if ($stmt_check->execute()) {
+                            $result_check = $stmt_check->get_result();
+                            if ($row_check = $result_check->fetch_assoc()) {
+                                if (!empty($row_check['is_high_interest'])) {
+                                    $relevance_alert_details[] = [
+                                        'type' => $entity['type'],
+                                        'id' => $entity['id'],
+                                        'label' => $config['display_prefix'] . $row_check[$config['label_field']]
+                                    ];
+                                }
+                            }
+                        }
+                        $stmt_check->close();
+                    }
+                }
+            }
+        }
+
+        if (!empty($relevance_alert_details)) {
+            $response_data['relevance_alert'] = true;
+            $response_data['relevant_entities'] = $relevance_alert_details;
+        }
+        // Relevance check logic ends here
+
         $conn->commit();
-        echo json_encode(['success'=>true]);
+        echo json_encode($response_data);
     } catch (Exception $e) {
         $conn->rollback();
         echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
@@ -822,8 +991,9 @@ function getVeiculoById($conn, $id)
 }
 function addVeiculo($conn, $input)
 {
-    $stmt = $conn->prepare("INSERT INTO veiculos (placa, marca_modelo, ano_modelo, cor, combustivel, renavam, chassi) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssss", $input['placa'], $input['marca_modelo'], $input['ano_modelo'], $input['cor'], $input['combustivel'], $input['renavam'], $input['chassi']);
+    $is_high_interest_val = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
+    $stmt = $conn->prepare("INSERT INTO veiculos (placa, marca_modelo, ano_modelo, cor, combustivel, renavam, chassi, is_high_interest) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssssssi", $input['placa'], $input['marca_modelo'], $input['ano_modelo'], $input['cor'], $input['combustivel'], $input['renavam'], $input['chassi'], $is_high_interest_val);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
@@ -834,8 +1004,9 @@ function addVeiculo($conn, $input)
 function updateVeiculo($conn, $input)
 {
     $id = (int) $input['id'];
-    $stmt = $conn->prepare("UPDATE veiculos SET placa=?, marca_modelo=?, ano_modelo=?, cor=?, combustivel=?, renavam=?, chassi=? WHERE id=?");
-    $stmt->bind_param("sssssssi", $input['placa'], $input['marca_modelo'], $input['ano_modelo'], $input['cor'], $input['combustivel'], $input['renavam'], $input['chassi'], $id);
+    $is_high_interest_val = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
+    $stmt = $conn->prepare("UPDATE veiculos SET placa=?, marca_modelo=?, ano_modelo=?, cor=?, combustivel=?, renavam=?, chassi=?, is_high_interest=? WHERE id=?");
+    $stmt->bind_param("sssssssii", $input['placa'], $input['marca_modelo'], $input['ano_modelo'], $input['cor'], $input['combustivel'], $input['renavam'], $input['chassi'], $is_high_interest_val, $id);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
@@ -871,8 +1042,9 @@ function getObjetoById($conn, $id)
 }
 function addObjeto($conn, $input)
 {
-    $stmt = $conn->prepare("INSERT INTO objetos (tipo, marca, modelo, numero_serie, quantidade, observacoes) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssis", $input['tipo'], $input['marca'], $input['modelo'], $input['numero_serie'], $input['quantidade'], $input['observacoes']);
+    $is_high_interest_val = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
+    $stmt = $conn->prepare("INSERT INTO objetos (tipo, marca, modelo, numero_serie, quantidade, observacoes, is_high_interest) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssisi", $input['tipo'], $input['marca'], $input['modelo'], $input['numero_serie'], $input['quantidade'], $input['observacoes'], $is_high_interest_val);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
@@ -883,8 +1055,9 @@ function addObjeto($conn, $input)
 function updateObjeto($conn, $input)
 {
     $id = (int) $input['id'];
-    $stmt = $conn->prepare("UPDATE objetos SET tipo=?, marca=?, modelo=?, numero_serie=?, quantidade=?, observacoes=? WHERE id=?");
-    $stmt->bind_param("ssssisi", $input['tipo'], $input['marca'], $input['modelo'], $input['numero_serie'], $input['quantidade'], $input['observacoes'], $id);
+    $is_high_interest_val = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
+    $stmt = $conn->prepare("UPDATE objetos SET tipo=?, marca=?, modelo=?, numero_serie=?, quantidade=?, observacoes=?, is_high_interest=? WHERE id=?");
+    $stmt->bind_param("ssssisii", $input['tipo'], $input['marca'], $input['modelo'], $input['numero_serie'], $input['quantidade'], $input['observacoes'], $is_high_interest_val, $id);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
@@ -920,8 +1093,9 @@ function getTelefoneById($conn, $id)
 }
 function addTelefone($conn, $input)
 {
-    $stmt = $conn->prepare("INSERT INTO telefones (numero, imei, operadora) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $input['numero'], $input['imei'], $input['operadora']);
+    $is_high_interest_val = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
+    $stmt = $conn->prepare("INSERT INTO telefones (numero, imei, operadora, is_high_interest) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("sssi", $input['numero'], $input['imei'], $input['operadora'], $is_high_interest_val);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
@@ -932,8 +1106,9 @@ function addTelefone($conn, $input)
 function updateTelefone($conn, $input)
 {
     $id = (int) $input['id'];
-    $stmt = $conn->prepare("UPDATE telefones SET numero=?, imei=?, operadora=? WHERE id=?");
-    $stmt->bind_param("sssi", $input['numero'], $input['imei'], $input['operadora'], $id);
+    $is_high_interest_val = isset($input['is_high_interest']) && $input['is_high_interest'] === '1' ? 1 : 0;
+    $stmt = $conn->prepare("UPDATE telefones SET numero=?, imei=?, operadora=?, is_high_interest=? WHERE id=?");
+    $stmt->bind_param("sssii", $input['numero'], $input['imei'], $input['operadora'], $is_high_interest_val, $id);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);
     } else {
@@ -1169,9 +1344,73 @@ function addVinculoManual($conn, $input)
     );
 
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Vínculo criado com sucesso!']);
+        if ($conn->affected_rows > 0) { // Verifica se o vínculo foi realmente inserido
+            $response_data = ['success' => true, 'message' => 'Vínculo criado com sucesso!'];
+            $relevance_alert_details = [];
+
+            $entity_config = [
+                'pessoa'   => ['table' => 'pessoas',   'label_field' => 'nome_completo', 'display_prefix' => 'Pessoa: '],
+                'veiculo'  => ['table' => 'veiculos',  'label_field' => 'placa',         'display_prefix' => 'Veículo: '],
+                'objeto'   => ['table' => 'objetos',   'label_field' => 'tipo',          'display_prefix' => 'Objeto: '],
+                'telefone' => ['table' => 'telefones', 'label_field' => 'numero',        'display_prefix' => 'Telefone: ']
+            ];
+
+            $entities_to_check = [
+                ['type' => $input['entidade1_tipo'], 'id' => (int)$input['entidade1_id']],
+                ['type' => $input['entidade2_tipo'], 'id' => (int)$input['entidade2_id']]
+            ];
+
+            $checked_ids_for_relevance = []; // Para evitar checar a mesma entidade duas vezes
+
+            foreach ($entities_to_check as $entity) {
+                $entity_key = $entity['type'] . '_' . $entity['id'];
+                if (in_array($entity_key, $checked_ids_for_relevance)) {
+                    continue;
+                }
+                $checked_ids_for_relevance[] = $entity_key;
+
+                if (array_key_exists($entity['type'], $entity_config)) {
+                    $config = $entity_config[$entity['type']];
+                    // Verifica se a coluna is_high_interest existe antes de incluir na query
+                    $sql_check_column = "SHOW COLUMNS FROM {$config['table']} LIKE 'is_high_interest'";
+                    $result_check_column = $conn->query($sql_check_column);
+                    
+                    if ($result_check_column && $result_check_column->num_rows > 0) {
+                        $sql_check = "SELECT {$config['label_field']}, is_high_interest FROM {$config['table']} WHERE id = ?";
+                        $stmt_check = $conn->prepare($sql_check);
+                        if ($stmt_check) {
+                            $stmt_check->bind_param("i", $entity['id']);
+                            if ($stmt_check->execute()) {
+                                $result_check = $stmt_check->get_result();
+                                if ($row_check = $result_check->fetch_assoc()) {
+                                    if (!empty($row_check['is_high_interest'])) { // is_high_interest = 1 ou TRUE
+                                        $relevance_alert_details[] = [
+                                            'type' => $entity['type'],
+                                            'id' => $entity['id'],
+                                            'label' => $config['display_prefix'] . $row_check[$config['label_field']]
+                                        ];
+                                    }
+                                }
+                            }
+                            $stmt_check->close();
+                        }
+                    } else {
+                        // Coluna is_high_interest não existe para esta entidade, então não pode ser de alto interesse
+                        // error_log("Coluna is_high_interest não encontrada na tabela {$config['table']}");
+                    }
+                }
+            }
+
+            if (!empty($relevance_alert_details)) {
+                $response_data['relevance_alert'] = true;
+                $response_data['relevant_entities'] = $relevance_alert_details;
+            }
+            echo json_encode($response_data);
+        } else {
+             echo json_encode(['success' => false, 'message' => 'Nenhum vínculo foi criado (0 linhas afetadas).']);
+        }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Erro ao criar vínculo: ' . $stmt->error]);
+        echo json_encode(['success' => false, 'message' => 'Erro ao executar a criação do vínculo: ' . $stmt->error]);
     }
     $stmt->close();
 }

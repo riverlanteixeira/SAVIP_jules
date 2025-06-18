@@ -263,6 +263,14 @@ document.getElementById('form-add-vinculo').addEventListener('submit', async (e)
     if (result.success) {
         alert(result.message);
         toggleModal('add-vinculo-modal', false);
+        // Relevance alert check
+        if (result.relevance_alert && result.relevant_entities && result.relevant_entities.length > 0) {
+            let alertMessage = "Alerta de Relevância:\n";
+            result.relevant_entities.forEach(entity => {
+                alertMessage += `- ${entity.label} (ID: ${entity.id}) é de alto interesse.\n`;
+            });
+            alert(alertMessage);
+        }
         e.target.reset();
         entidade1 = null; entidade2 = null;
         document.getElementById('vinculo-linked1').innerHTML = '';

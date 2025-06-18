@@ -49,6 +49,12 @@
                     <div><label for="numero_serie" class="block text-sm font-medium">Nº de Série</label><input type="text" id="numero_serie" name="numero_serie" class="mt-1 w-full p-2 border rounded"></div>
                     <div><label for="quantidade" class="block text-sm font-medium">Quantidade</label><input type="number" id="quantidade" name="quantidade" value="1" class="mt-1 w-full p-2 border rounded" required></div>
                     <div class="md:col-span-2 lg:col-span-3"><label for="observacoes" class="block text-sm font-medium">Observações</label><textarea id="observacoes" name="observacoes" rows="3" class="mt-1 w-full p-2 border rounded"></textarea></div>
+                    <div class="lg:col-span-3 mt-4">
+                        <label for="is_high_interest" class="flex items-center">
+                            <input type="checkbox" id="is_high_interest" name="is_high_interest" value="1" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Marcar como Alto Interesse</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="mt-8 text-right"><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Salvar Objeto</button></div>
             </form>
@@ -74,6 +80,12 @@
                     <div><label for="edit_numero_serie" class="block text-sm font-medium">Nº de Série</label><input type="text" id="edit_numero_serie" name="numero_serie" class="mt-1 w-full p-2 border rounded"></div>
                     <div><label for="edit_quantidade" class="block text-sm font-medium">Quantidade</label><input type="number" id="edit_quantidade" name="quantidade" class="mt-1 w-full p-2 border rounded" required></div>
                     <div class="md:col-span-2 lg:col-span-3"><label for="edit_observacoes" class="block text-sm font-medium">Observações</label><textarea id="edit_observacoes" name="observacoes" rows="3" class="mt-1 w-full p-2 border rounded"></textarea></div>
+                    <div class="lg:col-span-3 mt-4">
+                        <label for="edit_is_high_interest" class="flex items-center">
+                            <input type="checkbox" id="edit_is_high_interest" name="is_high_interest" value="1" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Marcar como Alto Interesse</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="flex justify-end pt-4 mt-4 border-t"><button type="button" class="px-4 bg-gray-200 p-3 rounded-lg mr-2" onclick="toggleModal('edit-modal', false)">Cancelar</button><button type="submit" class="px-4 bg-blue-600 p-3 rounded-lg text-white">Salvar Alterações</button></div>
             </form>
@@ -124,6 +136,7 @@
             e.preventDefault();
             const formData = new FormData(addForm);
             const data = Object.fromEntries(formData.entries());
+            data.is_high_interest = document.getElementById('is_high_interest').checked ? '1' : '0';
             try {
                 const response = await fetch(`${API_URL}?action=addObjeto`, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} });
                 if (!response.ok) {
@@ -133,7 +146,8 @@
                 }
                 const result = await response.json();
                 if (result.success) { 
-                    addForm.reset(); 
+                    addForm.reset();
+                    document.getElementById('is_high_interest').checked = false; 
                     carregarObjetos(); 
                     alert('Objeto adicionado com sucesso!'); 
                 } else { 
@@ -156,6 +170,7 @@
                 document.getElementById('edit_numero_serie').value = o.numero_serie;
                 document.getElementById('edit_quantidade').value = o.quantidade;
                 document.getElementById('edit_observacoes').value = o.observacoes;
+                document.getElementById('edit_is_high_interest').checked = !!parseInt(o.is_high_interest);
                 toggleModal('edit-modal', true); // Abre o modal de edição
             }
         }
@@ -164,6 +179,7 @@
             e.preventDefault();
             const formData = new FormData(editForm);
             const data = Object.fromEntries(formData.entries());
+            data.is_high_interest = document.getElementById('edit_is_high_interest').checked ? '1' : '0';
              // Ensure quantidade is a number
             data.quantidade = parseInt(data.quantidade, 10);
             try {

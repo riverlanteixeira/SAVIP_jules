@@ -87,6 +87,13 @@
                             class="mt-1 w-full p-2 border rounded"></div>
 
                     <div class="lg:col-span-4 mt-4">
+                        <label for="is_high_interest" class="flex items-center">
+                            <input type="checkbox" id="is_high_interest" name="is_high_interest" value="1" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Marcar como Alto Interesse</span>
+                        </label>
+                    </div>
+
+                    <div class="lg:col-span-4 mt-4">
                         <h4 class="font-semibold text-lg border-b pb-1">Características Físicas</h4>
                     </div>
                     <div><label for="cor_cabelo" class="block text-sm font-medium">Cor do Cabelo</label><input
@@ -259,6 +266,13 @@
                         <div class="md:col-span-2"><label for="edit_nome_mae"
                                 class="block text-sm font-medium">Mãe</label><input type="text" id="edit_nome_mae"
                                 name="nome_mae" class="mt-1 w-full p-2 border"></div>
+
+                        <div class="lg:col-span-4 mt-4">
+                            <label for="edit_is_high_interest" class="flex items-center">
+                                <input type="checkbox" id="edit_is_high_interest" name="is_high_interest" value="1" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="text-sm font-medium text-gray-700">Marcar como Alto Interesse</span>
+                            </label>
+                        </div>
 
                         <div class="lg:col-span-4 mt-4">
                             <h4 class="font-semibold text-lg border-b pb-1">Características Físicas</h4>
@@ -465,11 +479,20 @@
             const afiliacoes = Array.from(document.querySelectorAll('#afiliacoes option:checked')).map(el => el.value);
             formData.append('afiliacoes', afiliacoes.join(','));
             formData.append('tatuagens', JSON.stringify(tatuagensAdd));
+            const addIsHighInterest = document.getElementById('is_high_interest').checked ? '1' : '0';
+            formData.append('is_high_interest', addIsHighInterest);
             formData.append('action', 'addPessoa');
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: formData });
                 const result = await response.json();
-                if (result.success) { addForm.reset(); tatuagensAdd = []; renderTatuagens('add'); carregarPessoas(); alert('Pessoa adicionada!'); }
+                if (result.success) {
+                    addForm.reset();
+                    document.getElementById('is_high_interest').checked = false; // Reset checkbox
+                    tatuagensAdd = [];
+                    renderTatuagens('add');
+                    carregarPessoas();
+                    alert('Pessoa adicionada!');
+                }
                 else { alert('Erro: ' + (result.message || 'Erro desconhecido.')); }
             } catch (error) { console.error("Erro ao adicionar pessoa:", error); alert("Falha na comunicação com o servidor."); }
         }
@@ -505,6 +528,7 @@
                     document.getElementById('edit_atuacao_geografica').value = p.atuacao_geografica || '';
                     document.getElementById('edit_redes_sociais').value = p.redes_sociais || '';
                     document.getElementById('edit_foto_existente').value = p.foto_path || '';
+                    document.getElementById('edit_is_high_interest').checked = !!parseInt(p.is_high_interest);
 
                     const preview = document.getElementById('edit_foto_preview');
                     if (p.foto_path && p.foto_path !== 'null') {
@@ -537,6 +561,8 @@
                 const afiliacoes = Array.from(document.querySelectorAll('#edit_afiliacoes option:checked')).map(el => el.value);
                 formData.append('afiliacoes', afiliacoes.join(','));
                 formData.append('tatuagens', JSON.stringify(tatuagensEdit));
+                const editIsHighInterest = document.getElementById('edit_is_high_interest').checked ? '1' : '0';
+                formData.append('is_high_interest', editIsHighInterest);
                 formData.append('action', 'updatePessoa');
                 const response = await fetch(API_URL, { method: 'POST', body: formData });
                 const result = await response.json();
