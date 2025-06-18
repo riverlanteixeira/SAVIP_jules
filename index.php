@@ -38,7 +38,9 @@
                         href="telefones.php"
                         class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a><a
                         href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de
-                        Vínculos</a></div>
+                        Vínculos</a>
+                    <a href="busca_avancada.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Busca Avançada</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -474,7 +476,49 @@
         }
 
         async function adicionarPessoa(e) {
-            e.preventDefault();
+            e.preventDefault(); // Mover para o início para controlar o fluxo
+
+            const nomeCompleto = document.getElementById('nome_completo').value.trim();
+            const cpf = document.getElementById('cpf').value.trim();
+            const rg = document.getElementById('rg').value.trim();
+
+            // Somente fazer a verificação se algum campo relevante foi preenchido
+            if (nomeCompleto || cpf || rg) {
+                try {
+                    const similarCheckResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'checkSimilarPessoa',
+                            nome_completo: nomeCompleto,
+                            cpf: cpf,
+                            rg: rg
+                        })
+                    });
+                    const similarResult = await similarCheckResponse.json();
+
+                    if (similarResult.success && similarResult.similar_pessoas && similarResult.similar_pessoas.length > 0) {
+                        let alertMsg = "Atenção: Foram encontradas as seguintes pessoas com dados similares:\n\n";
+                        similarResult.similar_pessoas.forEach(p => {
+                            alertMsg += `- Nome: ${p.nome_completo || 'N/A'}, CPF: ${p.cpf || 'N/A'}, RG: ${p.rg || 'N/A'}\n`;
+                        });
+                        alertMsg += "\nDeseja continuar com o cadastro mesmo assim?";
+                        
+                        if (!confirm(alertMsg)) {
+                            return; // Interrompe a submissão se o usuário cancelar
+                        }
+                    } else if (!similarResult.success) {
+                        alert('Houve um erro ao verificar similaridades: ' + (similarResult.message || 'Erro desconhecido.'));
+                        // Opcional: decidir se interrompe ou continua em caso de erro na verificação
+                        // return; 
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar similaridade:", error);
+                    alert("Falha na comunicação ao verificar similaridade. O cadastro não foi efetuado.");
+                    return; // Interrompe em caso de falha na comunicação
+                }
+            }
+            // Continuar com a lógica original de adicionarPessoa (FormData, fetch para addPessoa, etc.)
             const formData = new FormData(addForm);
             const afiliacoes = Array.from(document.querySelectorAll('#afiliacoes option:checked')).map(el => el.value);
             formData.append('afiliacoes', afiliacoes.join(','));
@@ -555,7 +599,50 @@
         }
 
         async function salvarAlteracoes(e) {
-            e.preventDefault();
+            e.preventDefault(); // Mover para o início
+
+            const nomeCompleto = document.getElementById('edit_nome_completo').value.trim();
+            const cpf = document.getElementById('edit_cpf').value.trim();
+            const rg = document.getElementById('edit_rg').value.trim();
+            const currentId = document.getElementById('edit_pessoa_id').value;
+
+            if (nomeCompleto || cpf || rg) {
+                try {
+                    const similarCheckResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'checkSimilarPessoa',
+                            nome_completo: nomeCompleto,
+                            cpf: cpf,
+                            rg: rg,
+                            current_id: currentId
+                        })
+                    });
+                    const similarResult = await similarCheckResponse.json();
+
+                    if (similarResult.success && similarResult.similar_pessoas && similarResult.similar_pessoas.length > 0) {
+                        let alertMsg = "Atenção: Foram encontradas as seguintes pessoas com dados similares:\n\n";
+                        similarResult.similar_pessoas.forEach(p => {
+                            alertMsg += `- Nome: ${p.nome_completo || 'N/A'}, CPF: ${p.cpf || 'N/A'}, RG: ${p.rg || 'N/A'}\n`;
+                        });
+                        alertMsg += "\nDeseja salvar as alterações mesmo assim?";
+                        
+                        if (!confirm(alertMsg)) {
+                            return; // Interrompe a submissão se o usuário cancelar
+                        }
+                    } else if (!similarResult.success) {
+                        alert('Houve um erro ao verificar similaridades: ' + (similarResult.message || 'Erro desconhecido.'));
+                        // Opcional: decidir se interrompe ou continua
+                        // return;
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar similaridade:", error);
+                    alert("Falha na comunicação ao verificar similaridade. As alterações não foram salvas.");
+                    return; 
+                }
+            }
+            // Continuar com a lógica original de salvarAlteracoes (FormData, fetch para updatePessoa, etc.)
             try {
                 const formData = new FormData(editForm);
                 const afiliacoes = Array.from(document.querySelectorAll('#edit_afiliacoes option:checked')).map(el => el.value);

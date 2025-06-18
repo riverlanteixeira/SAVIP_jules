@@ -7,10 +7,21 @@ header('Content-Type: application/json; charset=utf-8');
 require 'config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-$inputJSON = json_decode(file_get_contents('php://input'), true);
-$inputPOST = $_POST;
+$inputJSON = json_decode(file_get_contents('php://input'), true); // Decodifica primeiro
 $files = $_FILES;
+
+// Prioriza action do JSON se o inputJSON não for nulo, depois POST, depois GET.
+if ($inputJSON !== null && isset($inputJSON['action'])) {
+    $action = $inputJSON['action'];
+} elseif (isset($_POST['action'])) {
+    $action = $_POST['action'];
+} elseif (isset($_GET['action'])) {
+    $action = $_GET['action'];
+} else {
+    $action = '';
+}
+
+$inputPOST = $_POST; // Mantém para compatibilidade com FormData
 
 // --- ROTEADOR PRINCIPAL DE AÇÕES ---
 switch ($action) {
@@ -76,6 +87,9 @@ switch ($action) {
     case 'getGraphDataForCase': getGraphDataForCase($conn, (int)($_GET['caso_id'] ?? 0)); break;
     case 'addVinculoManual': if ($method == 'POST') addVinculoManual($conn, $inputJSON); break; 
     case 'getTimelineData': getTimelineDataForCase($conn, (int)($_GET['id_entidade'] ?? 0)); break; // Nova action
+    case 'checkSimilarPessoa': if ($method == 'POST') checkSimilarPessoa($conn, $inputJSON); break;
+    case 'checkSimilarVeiculo': if ($method == 'POST') checkSimilarVeiculo($conn, $inputJSON); break;
+    case 'advancedSearch': if ($method == 'POST') advancedSearch($conn, $inputJSON); break;
     
     default:
         echo json_encode(['success' => false, 'message' => 'Ação desconhecida.']);
@@ -1651,5 +1665,327 @@ function getTimelineDataForCase($conn, $caso_id) {
     });
 
     echo json_encode(['success' => true, 'data' => $timeline_events]);
+}
+
+function checkSimilarPessoa($conn, $input) {
+    $nome_completo = $input['nome_completo'] ?? '';
+    $cpf = $input['cpf'] ?? '';
+    $rg = $input['rg'] ?? '';
+    $current_id = isset($input['current_id']) ? (int)$input['current_id'] : 0;
+
+    $similar_pessoas = [];
+    $params = [];
+    $types = "";
+    $conditions = [];
+
+    // SOUNDEX para nome_completo (se nome_completo for fornecido e não vazio)
+    if (!empty($nome_completo)) {
+        $stmt_soundex = $conn->prepare("SELECT SOUNDEX(?) as soundex_value");
+        if ($stmt_soundex) {
+            $stmt_soundex->bind_param("s", $nome_completo);
+            $stmt_soundex->execute();
+            $result_soundex = $stmt_soundex->get_result();
+            if ($row_soundex = $result_soundex->fetch_assoc()) {
+                if (!empty($row_soundex['soundex_value'])) {
+                    $conditions[] = "SOUNDEX(nome_completo) = ?";
+                    $params[] = $row_soundex['soundex_value'];
+                    $types .= "s";
+                }
+            }
+            $stmt_soundex->close();
+        }
+    }
+
+    // CPF exato (se CPF for fornecido e não vazio)
+    if (!empty($cpf)) {
+        $conditions[] = "cpf = ?";
+        $params[] = $cpf;
+        $types .= "s";
+    }
+
+    // RG exato (se RG for fornecido e não vazio)
+    if (!empty($rg)) {
+        $conditions[] = "rg = ?";
+        $params[] = $rg;
+        $types .= "s";
+    }
+
+    if (empty($conditions)) {
+        echo json_encode(['success' => true, 'similar_pessoas' => []]); // Nenhum critério para buscar
+        return;
+    }
+
+    $sql = "SELECT id, nome_completo, cpf, rg, alcunha FROM pessoas WHERE (" . implode(' OR ', $conditions) . ")";
+    if ($current_id > 0) {
+        $sql .= " AND id != ?";
+        $params[] = $current_id;
+        $types .= "i";
+    }
+    $sql .= " LIMIT 5"; // Limitar o número de resultados
+
+    $stmt_similar = $conn->prepare($sql);
+    if ($stmt_similar) {
+        if (!empty($types) && !empty($params)) {
+             $stmt_similar->bind_param($types, ...$params);
+        }
+        
+        if ($stmt_similar->execute()) {
+            $result_similar = $stmt_similar->get_result();
+            while ($row = $result_similar->fetch_assoc()) {
+                $similar_pessoas[] = $row;
+            }
+            echo json_encode(['success' => true, 'similar_pessoas' => $similar_pessoas]);
+        } else {
+            error_log("Erro ao executar checkSimilarPessoa: " . $stmt_similar->error);
+            echo json_encode(['success' => false, 'message' => 'Erro ao buscar pessoas similares: ' . $stmt_similar->error]);
+        }
+        $stmt_similar->close();
+    } else {
+        error_log("Erro ao preparar statement em checkSimilarPessoa: " . $conn->error);
+        echo json_encode(['success' => false, 'message' => 'Erro ao preparar consulta para pessoas similares: ' . $conn->error]);
+    }
+}
+
+function checkSimilarVeiculo($conn, $input) {
+    $placa = $input['placa'] ?? '';
+    $chassi = $input['chassi'] ?? '';
+    $current_id = isset($input['current_id']) ? (int)$input['current_id'] : 0;
+
+    $similar_veiculos = [];
+    $params = [];
+    $types = "";
+    $conditions = [];
+
+    if (!empty($placa)) {
+        $conditions[] = "placa = ?";
+        $params[] = $placa;
+        $types .= "s";
+    }
+
+    if (!empty($chassi)) {
+        $conditions[] = "chassi = ?";
+        $params[] = $chassi;
+        $types .= "s";
+    }
+
+    if (empty($conditions)) {
+        echo json_encode(['success' => true, 'similar_veiculos' => []]);
+        return;
+    }
+
+    $sql = "SELECT id, placa, marca_modelo, renavam, chassi FROM veiculos WHERE (" . implode(' OR ', $conditions) . ")";
+    if ($current_id > 0) {
+        $sql .= " AND id != ?";
+        $params[] = $current_id;
+        $types .= "i";
+    }
+    $sql .= " LIMIT 5";
+
+    $stmt_similar = $conn->prepare($sql);
+    if ($stmt_similar) {
+        if (!empty($types) && !empty($params)) {
+             $stmt_similar->bind_param($types, ...$params);
+        }
+        
+        if ($stmt_similar->execute()) {
+            $result_similar = $stmt_similar->get_result();
+            while ($row = $result_similar->fetch_assoc()) {
+                $similar_veiculos[] = $row;
+            }
+            echo json_encode(['success' => true, 'similar_veiculos' => $similar_veiculos]);
+        } else {
+            error_log("Erro ao executar checkSimilarVeiculo: " . $stmt_similar->error);
+            echo json_encode(['success' => false, 'message' => 'Erro ao buscar veículos similares: ' . $stmt_similar->error]);
+        }
+        $stmt_similar->close();
+    } else {
+        error_log("Erro ao preparar statement em checkSimilarVeiculo: " . $conn->error);
+        echo json_encode(['success' => false, 'message' => 'Erro ao preparar consulta para veículos similares: ' . $conn->error]);
+    }
+}
+
+function advancedSearch($conn, $input) {
+    // Validação básica do input
+    if (empty($input['entity_filters']) || !is_array($input['entity_filters'])) {
+        echo json_encode(['success' => false, 'message' => 'Nenhum filtro de entidade fornecido ou formato inválido.']);
+        return;
+    }
+
+    $global_operator = strtoupper($input['global_operator'] ?? 'AND');
+    if ($global_operator !== 'AND' && $global_operator !== 'OR') {
+        $global_operator = 'AND'; // Padrão para AND se inválido
+    }
+
+    // $results = []; // Não usado diretamente nesta versão simplificada
+    // $pdo_params = []; // Não usado diretamente nesta versão simplificada (parâmetros são por query)
+    // $query_parts = []; // Não usado diretamente nesta versão simplificada
+
+    $entity_map = [
+        'pessoa' => [
+            'table' => 'pessoas',
+            'select_fields' => ['id', 'nome_completo', 'cpf', 'alcunha', 'is_high_interest'],
+            'label_template' => "Pessoa: {nome_completo} (CPF: {cpf})",
+            'link_template' => "index.php#pessoa-{id}",
+            'allowed_fields' => ['id', 'nome_completo', 'cpf', 'alcunha', 'rg', 'nome_mae', 'data_nascimento', 'is_high_interest']
+        ],
+        'veiculo' => [
+            'table' => 'veiculos',
+            'select_fields' => ['id', 'placa', 'marca_modelo', 'chassi', 'is_high_interest'],
+            'label_template' => "Veículo: {placa} ({marca_modelo})",
+            'link_template' => "veiculos.php#veiculo-{id}",
+            'allowed_fields' => ['id', 'placa', 'chassi', 'marca_modelo', 'cor', 'ano_modelo', 'is_high_interest']
+        ],
+        'ocorrencia' => [ // Ocorrências não têm is_high_interest atualmente
+            'table' => 'ocorrencias',
+            'select_fields' => ['id', 'numero_bo', 'fatos_comunicados', 'data_fato'],
+            'label_template' => "Ocorrência: BO {numero_bo} (Data: {data_fato})",
+            'link_template' => "ocorrencias.php#ocorrencia-{id}",
+            'allowed_fields' => ['id', 'numero_bo', 'fatos_comunicados', 'data_fato', 'local_id']
+        ],
+        'objeto' => [
+            'table' => 'objetos',
+            'select_fields' => ['id', 'tipo', 'marca', 'numero_serie', 'is_high_interest'],
+            'label_template' => "Objeto: {tipo} - {marca} (Série: {numero_serie})",
+            'link_template' => "objetos.php#objeto-{id}",
+            'allowed_fields' => ['id', 'tipo', 'marca', 'modelo', 'numero_serie', 'is_high_interest']
+        ],
+        'telefone' => [
+            'table' => 'telefones',
+            'select_fields' => ['id', 'numero', 'imei', 'is_high_interest'],
+            'label_template' => "Telefone: {numero} (IMEI: {imei})",
+            'link_template' => "telefones.php#telefone-{id}",
+            'allowed_fields' => ['id', 'numero', 'imei', 'operadora', 'is_high_interest']
+        ],
+        'caso' => [ // Casos não têm is_high_interest atualmente
+            'table' => 'casos',
+            'select_fields' => ['id', 'inquerito_policial', 'autos', 'data_criacao'],
+            'label_template' => "Caso: IP {inquerito_policial} (Autos: {autos})",
+            'link_template' => "casos.php#caso-{id}",
+            'allowed_fields' => ['id', 'inquerito_policial', 'autos', 'relato_fatos', 'investigacoes', 'conclusao']
+        ],
+        'local' => [ // Locais não têm is_high_interest atualmente
+            'table' => 'locais',
+            'select_fields' => ['id', 'descricao', 'rua', 'municipio'],
+            'label_template' => "Local: {descricao} ({rua}, {municipio})",
+            'link_template' => "locais.php#local-{id}",
+            'allowed_fields' => ['id', 'descricao', 'rua', 'bairro', 'municipio', 'cep']
+        ]
+    ];
+    
+    $operator_map = [
+        '=' => '=', 'LIKE' => 'LIKE', 'NOT LIKE' => 'NOT LIKE',
+        '>' => '>', '<' => '<', '>=' => '>=', '<=' => '<=', '!=' => '!=',
+    ];
+
+    $all_entity_results = [];
+
+    foreach ($input['entity_filters'] as $entity_filter_group) {
+        $entity_type = $entity_filter_group['entity_type'];
+        if (!isset($entity_map[$entity_type])) {
+            error_log("Tipo de entidade desconhecido na busca avançada: " . $entity_type);
+            continue;
+        }
+
+        $config = $entity_map[$entity_type];
+        $table = $config['table'];
+        $group_operator = strtoupper($entity_filter_group['group_operator'] ?? 'AND');
+        if ($group_operator !== 'AND' && $group_operator !== 'OR') {
+            $group_operator = 'AND';
+        }
+
+        $where_clauses = [];
+        $current_entity_params = [];
+        $current_entity_types_str = "";
+
+        if (empty($entity_filter_group['criteria'])) {
+            continue; 
+        }
+
+        foreach ($entity_filter_group['criteria'] as $criterion) {
+            $field = $criterion['field'];
+            $operator_key = strtoupper($criterion['operator']);
+            $value = $criterion['value'];
+
+            if (!in_array($field, $config['allowed_fields'])) {
+                echo json_encode(['success' => false, 'message' => "Campo '{$field}' não permitido para entidade '{$entity_type}'."]);
+                return;
+            }
+            
+            $sql_operator = $operator_map[$operator_key] ?? null;
+            $param_value = $value;
+
+            if ($operator_key === 'STARTS_WITH') {
+                $sql_operator = 'LIKE';
+                $param_value = $value . '%';
+            } elseif ($operator_key === 'ENDS_WITH') {
+                $sql_operator = 'LIKE';
+                $param_value = '%' . $value;
+            } elseif ($operator_key === 'LIKE' || $operator_key === 'NOT LIKE') {
+                 $param_value = '%' . $value . '%';
+            }
+
+            if (!$sql_operator) {
+                 echo json_encode(['success' => false, 'message' => "Operador '{$operator_key}' não permitido."]);
+                 return;
+            }
+            
+            $where_clauses[] = "`{$field}` {$sql_operator} ?";
+            $current_entity_params[] = $param_value;
+            // Determinar tipo para bind_param (simplificado, pode precisar de mais lógica para datas/números)
+            if (is_int($param_value)) $current_entity_types_str .= 'i';
+            else if (is_double($param_value)) $current_entity_types_str .= 'd';
+            else $current_entity_types_str .= 's';
+        }
+
+        if (!empty($where_clauses)) {
+            $select_cols_str = implode(', ', array_map(function($f) { return "`$f`"; }, $config['select_fields']));
+            $query_sql = "SELECT {$select_cols_str} FROM `{$table}` WHERE " . implode(" {$group_operator} ", $where_clauses);
+            
+            try {
+                $stmt = $conn->prepare($query_sql);
+                if ($stmt) {
+                    if (!empty($current_entity_types_str)) {
+                         $stmt->bind_param($current_entity_types_str, ...$current_entity_params);
+                    }
+                   
+                    if ($stmt->execute()) {
+                        $result_set = $stmt->get_result();
+                        $entity_results_for_type = $result_set->fetch_all(MYSQLI_ASSOC);
+
+                        foreach ($entity_results_for_type as $row) {
+                            $label = $config['label_template'];
+                            $link = $config['link_template'];
+                            foreach ($row as $col_name => $col_val) {
+                                $label = str_replace("{{$col_name}}", htmlspecialchars($col_val ?? ''), $label);
+                            }
+                             $link = str_replace("{id}", urlencode($row['id'] ?? ''), $link); 
+
+                            $all_entity_results[] = [
+                                'entity_type_label' => ucfirst($entity_type), // Adiciona um label para o tipo de entidade
+                                'entity_type' => $entity_type,
+                                'entity_id' => $row['id'] ?? null,
+                                'display_label' => $label,
+                                'details_link' => $link,
+                                'is_high_interest' => $row['is_high_interest'] ?? 0 // Inclui o campo
+                            ];
+                        }
+                    } else {
+                         error_log("Falha ao executar statement para entidade {$entity_type}: " . $stmt->error);
+                    }
+                    $stmt->close();
+                } else {
+                     error_log("Falha ao preparar statement para entidade {$entity_type}: " . $conn->error);
+                }
+            } catch (Exception $e) {
+                error_log("Erro ao executar busca para entidade {$entity_type}: " . $e->getMessage());
+            }
+        }
+    }
+    
+    // A lógica de combinação global AND/OR ainda é uma simplificação aqui.
+    // Para um AND verdadeiro entre diferentes tipos de entidades, seria necessário um pós-processamento
+    // para encontrar entidades comuns ou relacionadas que satisfaçam todos os grupos.
+    // Esta versão retorna uma lista agregada de todas as entidades que correspondem aos seus próprios filtros.
+    echo json_encode(['success' => true, 'results' => $all_entity_results, 'debug_input' => $input]);
 }
 ?>

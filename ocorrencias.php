@@ -30,7 +30,9 @@
                         href="telefones.php"
                         class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a><a
                         href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de
-                        Vínculos</a></div>
+                        Vínculos</a>
+                    <a href="busca_avancada.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Busca Avançada</a>
+                </div>
             </div>
         </div>
     </nav>

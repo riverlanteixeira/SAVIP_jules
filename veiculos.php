@@ -20,16 +20,18 @@
             <div class="flex justify-between items-center">
                 <div class="text-xl font-bold">SAVIP</div>
                 <div><a href="casos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Casos</a><a
-                        href="index.php" class="px-3 py-2 rounded-md text-sm font-medium bg-gray-900">Pessoas</a>
+                        href="index.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Pessoas</a>
                         <a href="ocorrencias.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Ocorrências</a>
                         <a href="locais.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Locais</a>
-                        <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Veículos</a><a
+                        <a href="veiculos.php" class="px-3 py-2 rounded-md text-sm font-medium bg-gray-900">Veículos</a><a
                         href="objetos.php"
                         class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Objetos</a><a
                         href="telefones.php"
                         class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Telefones</a><a
                         href="analise.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Análise de
-                        Vínculos</a></div>
+                        Vínculos</a>
+                    <a href="busca_avancada.php" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">Busca Avançada</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -141,6 +143,44 @@
 
         addForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const placa = document.getElementById('placa').value.trim();
+            const chassi = document.getElementById('chassi').value.trim();
+
+            if (placa || chassi) {
+                try {
+                    const similarCheckResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'checkSimilarVeiculo',
+                            placa: placa,
+                            chassi: chassi
+                        })
+                    });
+                    const similarResult = await similarCheckResponse.json();
+
+                    if (similarResult.success && similarResult.similar_veiculos && similarResult.similar_veiculos.length > 0) {
+                        let alertMsg = "Atenção: Foram encontradas os seguintes veículos com dados similares:\n\n";
+                        similarResult.similar_veiculos.forEach(v => {
+                            alertMsg += `- Placa: ${v.placa || 'N/A'}, Chassi: ${v.chassi || 'N/A'}, Modelo: ${v.marca_modelo || 'N/A'}\n`;
+                        });
+                        alertMsg += "\nDeseja continuar com o cadastro mesmo assim?";
+                        
+                        if (!confirm(alertMsg)) {
+                            return; // Interrompe a submissão
+                        }
+                    } else if (!similarResult.success) {
+                        alert('Houve um erro ao verificar similaridades de veículos: ' + (similarResult.message || 'Erro desconhecido.'));
+                        // Opcional: return;
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar similaridade de veículos:", error);
+                    alert("Falha na comunicação ao verificar similaridade de veículos. O cadastro não foi efetuado.");
+                    return;
+                }
+            }
+            
             const formData = new FormData(addForm);
             const data = Object.fromEntries(formData.entries());
             data.is_high_interest = document.getElementById('is_high_interest').checked ? '1' : '0';
@@ -185,6 +225,46 @@
         
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const placa = document.getElementById('edit_placa').value.trim();
+            const chassi = document.getElementById('edit_chassi').value.trim();
+            const currentId = document.getElementById('edit_veiculo_id').value;
+
+            if (placa || chassi) {
+                try {
+                    const similarCheckResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'checkSimilarVeiculo',
+                            placa: placa,
+                            chassi: chassi,
+                            current_id: currentId
+                        })
+                    });
+                    const similarResult = await similarCheckResponse.json();
+
+                    if (similarResult.success && similarResult.similar_veiculos && similarResult.similar_veiculos.length > 0) {
+                        let alertMsg = "Atenção: Foram encontradas os seguintes veículos com dados similares:\n\n";
+                        similarResult.similar_veiculos.forEach(v => {
+                            alertMsg += `- Placa: ${v.placa || 'N/A'}, Chassi: ${v.chassi || 'N/A'}, Modelo: ${v.marca_modelo || 'N/A'}\n`;
+                        });
+                        alertMsg += "\nDeseja salvar as alterações mesmo assim?";
+                        
+                        if (!confirm(alertMsg)) {
+                            return; // Interrompe a submissão
+                        }
+                    } else if (!similarResult.success) {
+                        alert('Houve um erro ao verificar similaridades de veículos: ' + (similarResult.message || 'Erro desconhecido.'));
+                        // Opcional: return;
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar similaridade de veículos:", error);
+                    alert("Falha na comunicação ao verificar similaridade de veículos. As alterações não foram salvas.");
+                    return;
+                }
+            }
+
             const formData = new FormData(editForm);
             const data = Object.fromEntries(formData.entries());
             data.is_high_interest = document.getElementById('edit_is_high_interest').checked ? '1' : '0';
